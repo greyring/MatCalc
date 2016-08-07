@@ -13,7 +13,7 @@ static Matrix *ans[1] = {NULL};//Todo 把数组拿掉
 /*
  *为矩阵分配空间,p指向的matrix为NULL
  */
-Matrix* stor_createMatrix(Matrix *p, int m, int n, int type)
+Matrix* stor_createMatrix(Matrix *p, int m, int n)
 {
 	int i;
 	
