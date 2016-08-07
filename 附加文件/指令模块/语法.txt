@@ -1,0 +1,87 @@
+有优先级，前面标号高的优先级高，parse tree里层数要高
+写法根据ABNF，与词法有联系
+一般不放空格
+所有MatName和Ans不同请注意不要漏了,MatName也有可能用复杂式代替
+一个赋值语句当做一个表达式
+那些不加<end>的加上后就是命令
+
+主体：<numExpression>：计算后得到数字的一串表达式
+      <matricExpression>:计算后得到矩阵的一串表达式
+      <command>：一个可被执行的命令
+副主体：<matric>：通过单目函数或标识符得到的矩阵
+        <num>：通过单目函数或数得到的数
+
+
+
+
+<end> = <SPACE> [";"] "\n"
+<filename> = *(所有字符除/[];=,|*?><)
+<path> =  [<BIGALPHA> ":"]  *("\"  *(所有字符除/[];="\:,|*?><)) <filename>      ;path长度小于255
+------------------------------------------------------------------
+<line> =  *(<NUM> (<SPACE>|<COMMA><SPACE>)) <NUM>
+<matricLine> = *(<matric> (<SPACE>|<COMMA><SPACE>)) <matric>
+<data> = *( <line> (<SEMICOLON>|<LF>) <SPACE> ) <line>
+<matricData> = *( <matricLine> (<SEMICOLON>|<LF>) <SPACE> ) <matricLine>
+<constMatric> = "[" (<SPACE>|<LF>) <data> (<SPACE>|<LF>) "]"
+              | "[" (<SPACE>|<LF>) <colonLine> (<SPACE>|<LF>) "]"  （向量）
+              | "[" (<SPACE>|<LF>) <matricData> (<SPACE>|<LF>) "]"  (嵌套）  (注意检查行列对齐）
+<colonLine> = [<INTEGER><COLON><SPACE>] <INTEGER><COLON><SPACE><INTEGER>
+<vector> = "[" <SPACE> <line> <SPACE> "]"
+------------------------------------------------------------------
+单目运算部分当做矩阵
+<power> = <MatName> ["."] <POWER> <SPACE> <SINTEGER>
+<transpose> = <MatName>"'"
+四则运算
+<matricExpression> = <LP><SPACE><matricExpression><RP>                      ;外面加括号
+             | ("+"|"-")<SPACE> <expression>                                ;前面加正负号
+             | <matricExpression>(<ADD>|<SUB>)<SPACE><matricExpression>     ;两个相加减
+             | <matricExpression><DIV><SPACE>（<matricExpression>|<numExpression>)             ;两个相除
+             | <matricExpression><MOD><SPACE><numExpression>                ;模
+             | <matricExpression><MUL><SPACE> (<matricExpression>|<numExpression>) ;矩阵乘
+             | <numExpression><MUL><SPACE><matricExpression>                ;乘矩阵
+             | <matric>                                                     ;一个矩阵是矩阵表达式
+<numExpression> = <LP><SPACE><numExpression><RP>                            ;外面加括号
+                | ("+"|"-")<SPACE><numExpression>                              ;前面加正负号
+                | 
+<matric> = <MatName>|<power>|<transpose>|<newMatric>（是否妥当）|<rand>|<zeros>|<eye>|<ansToMatric>|<round>|<upper>|<lower>|<rref>|<reverse>|<eig>|<subMatric>
+<num> = <REAL>|<SINTEGER>|<sum>|<max>|<min>|<det>|<rank>|<dot>|<angle>|<norm>|<numInMatric>
+----------------------------------------------------------------
+<showMatric> = <SPACE> <matricExpression> <end>
+<readfrom> = <ReadFrom> <SPACE> <path> <end>
+<read> = <Read> <end>
+<writeto> = <WriteTo> <SPACE> <path> <end>
+----------------------------------------------------------------
+<newMatric> =  <SPACE> <MatName> <EQUAL> <SPACE> <constMatric>   (换行后可以有空格吗）([前可以有换行吗） 
+<rand> = /*[<SPACE> <MatName><EQUAL>]*/  <Rand>  <LP><SPACE><INTEGER> [<COMMA><SPACE><INTEGER>] <RP>
+<zeros> = /*[<SPACE> <MatName><EQUAL>]*/ <Zeros> <LP><SPACE><INTEGER> [<COMMA><SPACE><INTEGER>] <RP>
+<eye> = /*[<SPACE> <MatName><EQUAL>]*/    <Eye>  <LP><SPACE><INTEGER> [<COMMA><SPACE><INTEGER>] <RP>
+<ansToMatric> = <SPACE><MatName><EQUAL><SPACE><Ans>
+<round> = <ROUND><LP><SPACE><MatName><RP>
+<upper> = <UPPER><LP><SPACE><MatName><RP>
+<lower> = <LOWER><LP><SPACE><MatName><RP>
+<rref> = <RREF><LP><SPACE><MatName><RP>
+<reverse> = <REVERSE><LP><SPACE><matric><RP>
+<eig> = <EIG><LP><SPACE><matricExpression><RP>
+---------------------------------------------------------------
+<sum> = <SUM><LP><SPACE><matricExpression><RP>
+<max> = <MAX><LP><SPACE><matricExpression><RP>
+<min> = <MIN><LP><SPACE><matricExpression><RP>
+<det> = <DET><LP><SPACE><MatName><RP>
+<rank> = <RANK><LP><SPACE><MatName><RP>
+<dot> = <DOT><LP><SPACE><matricExpression><COMMA><SPACE><matricExpression><RP>
+<angle> = <ANGLE><LP><SPACE><matricExpression><RP>
+<norm> = <NORM><LP><SPACE><matricExpression><RP>
+---------------------------------------------------------------
+<numInMatric> = <matricExpression> <LP><SPACE><INTEGER><COMMA><SPACE><INTEGER><RP>(作为子矩阵处理）
+<subMatric> = <matricExpression> <LP> (<SPACE><colonLine>|<COLON>) <COMMA> (<SPACE><colonLine>|<COLON>) <RP>
+                               |<LP> <SPACE><vector><COMMA><SPACE><vector> <RP>
+
+
+
+函数压入堆栈后，设置为如果下一个被弹出，则弹出函数，下一个压入的一定得为（
+用一个flag保留刚才压下的是不是一个运算，用于对单目运算的处理
+ans是不能被赋值的
+新建的矩阵在两个数字间的空格优先解释为逗号
+小数点前必须有数字
+
+
