@@ -7,13 +7,6 @@
 *返回的指针都是ans，如果要弄个新的矩阵要自己弄
 */
 
-static double **ex1_mul(double** p1, double** p2, int m);
-static long **ex0_mul(long** p1, long** p2, int m);
-static void ex1(double** p, int m);
-static void ex0(long** p, int m);
-static void exchange_row(double *a, double *b, int n);
-static void mul_row(double *a, double k, int n);
-static void add_row(double *a1, double *a2, int k, int n);
 static int rank(double** p, int m, int n);
 static double dot11(double** p1, double** p2, int m, int n);
 static double dot10(double** p1, long** p2, int m, int n);
@@ -53,6 +46,58 @@ static Matrix* swapColum(Matrix *p, int c1, int c2)
 }
 
 /*
+* rd = rd+rs*mul, rd,rs are scripts,NoError
+*/
+static Matrix* addRow(Matrix *p, int rd, int rs, double mul)
+{
+	int i;
+	for (i = 0; i < p->n; i++)
+	{
+		*stor_entry(p, rd, i) += mul * *stor_entry(p, rs, i);
+	}
+	return p;
+}
+
+/*
+* cd = cd+cs*mul, cd,cs are scripts,NoError
+*/
+static Matrix* addColum(Matrix *p, int cd, int cs, double mul)
+{
+	int i;
+	for (i = 0; i < p->m; i++)
+	{
+		*stor_entry(p, i,cd) += mul * *stor_entry(p, i, cs);
+	}
+	return p;
+}
+
+/*
+* r is script,NoError
+*/
+static Matrix* mulRow(Matrix *p, int r, double mul)
+{
+	int i;
+	for (i = 0; i < p->n; i++)
+	{
+		*stor_entry(p, r, i) *= mul;
+	}
+	return p;
+}
+
+/*
+* c is script,NoError
+*/
+static Matrix* mulColum(Matrix *p, int c, double mul)
+{
+	int i;
+	for (i = 0; i < p->m; i++)
+	{
+		*stor_entry(p, i, c) *= mul;
+	}
+	return p;
+}
+
+/*
 *Create a random Matrix, each entry is double between 0 to 1, Error return NULL
 */
 Matrix* calc_rand_Matrix(int m, int n)
@@ -67,7 +112,7 @@ Matrix* calc_rand_Matrix(int m, int n)
 	{
 		for (j = 0; j<n; j++)
 		{
-			*stor_ansEntry(i,j) = rand()*1.0/RAND_MAX;
+			*stor_entry(ans, i,j) = rand()*1.0/RAND_MAX;
 		}
 	}
 	return ans;
@@ -88,7 +133,7 @@ Matrix* calc_zeros_Matrix(int m, int n)
 	{
 		for (j = 0; j<n; j++)
 		{
-			*stor_ansEntry(i,j) = 0;
+			*stor_entry(ans, i,j) = 0;
 		}
 	}
 	return ans;
@@ -110,16 +155,16 @@ Matrix* calc_eye_Matrix(int n)
 		for (j = 0; j<n; j++)
 		{
 			if (i != j)
-				*stor_ansEntry(i,j) = 0;
+				*stor_entry(ans, i,j) = 0;
 			else
-				*stor_ansEntry(i,j) = 1;
+				*stor_entry(ans, i,j) = 1;
 		}
 	}
 	return ans;
 }
 
 /*
-*Add two matrixs, Error
+*Add two matrixs, can't have ans, Error
 */
 Matrix* calc_add_Matrix(Matrix* p1, Matrix* p2)
 {
@@ -142,12 +187,12 @@ Matrix* calc_add_Matrix(Matrix* p1, Matrix* p2)
 	}
 	for (i = 0; i < p1->m; i++)
 		for (j = 0; j < p1->n; j++)
-			*stor_ansEntry(i, j) = *stor_entry(p1, i, j)+ *stor_entry(p2, i, j);
+			*stor_entry(ans, i, j) = *stor_entry(p1, i, j)+ *stor_entry(p2, i, j);
 	return ans;
 }
 
 /*
-*Sub two matrixs, Error
+*Sub two matrixs, can't have ans, Error
 */
 Matrix* calc_sub_Matrix(Matrix* p1, Matrix* p2) 
 {
@@ -170,15 +215,16 @@ Matrix* calc_sub_Matrix(Matrix* p1, Matrix* p2)
 	}
 	for (i = 0; i < p1->m; i++)
 		for (j = 0; j < p1->n; j++)
-			*stor_ansEntry(i, j) = *stor_entry(p1, i, j) - *stor_entry(p2, i, j);
+			*stor_entry(ans, i, j) = *stor_entry(p1, i, j) - *stor_entry(p2, i, j);
 
 	return ans;
 }
 
 /*
-*Mul two matrixs, Error
+*Mul two matrixs, can't have ans, Error
 */
-Matrix* calc_mul_Matrix(Matrix* p1, Matrix* p2) {
+Matrix* calc_mul_Matrix(Matrix* p1, Matrix* p2) 
+{
 	int i, j, k;
 	if (p1 == NULL || p2 == NULL)
 	{
@@ -200,18 +246,19 @@ Matrix* calc_mul_Matrix(Matrix* p1, Matrix* p2) {
 	for (i = 0; i < p1->m; i++)
 		for (j = 0; j < p2->n; j++)
 		{
-			*stor_ansEntry(i, j) = 0;
+			*stor_entry(ans, i, j) = 0;
 			for (k = 0; k < p1->n; k++)
-				*stor_ansEntry(i, j) += *stor_entry(p1, i, k)* *stor_entry(p2, k, j);
+				*stor_entry(ans, i, j) += *stor_entry(p1, i, k)* *stor_entry(p2, k, j);
 		}
 	return ans;
 }
 
 /*
-*the reverse of matrix, Error
+*the reverse of matrix, can't have ans, Error
 *Todo test
 */
-Matrix* calc_reverse_Matrix(Matrix* p){
+Matrix* calc_reverse_Matrix(Matrix* p)
+{
 	int i, j, k;
 	int n;
 	double temp, temp2;
@@ -251,30 +298,21 @@ Matrix* calc_reverse_Matrix(Matrix* p){
 		}
 		if (k != i)
 		{
-			for (j = 0; j < n; j++)
-			{
-				util_swap(stor_entry(t, i, j), stor_entry(t, k, j));
-				util_swap(stor_ansEntry(i, j), stor_ansEntry(k, j));
-			}
+			swapRow(t, i, k);
+			swapRow(ans, i, k);
 		}
 		//k is no use since
 		temp = *stor_entry(t, i, i);
-		for (j = 0; j < n; j++)
-		{
-			*stor_entry(t, i, j) /= temp;
-			*stor_ansEntry(i, j) /= temp;
-		}
+		mulRow(t, i, (double)1.0 / temp);
+		mulRow(ans, i, (double)1.0 / temp);
 		//the [i][i] is 1 now
 		for (j = i + 1; j < n; j++)
 		{
 			if (!util_isZero(*stor_entry(t, j, i)))
 			{
 				temp2 = *stor_entry(t, j, i);
-				for (k = 0; k < n; k++)
-				{
-					*stor_entry(t, j, k) -= temp2 * *stor_entry(t, i, k);
-					*stor_ansEntry(j, k) -= temp2 * *stor_ansEntry(i, k);
-				}
+				addRow(t, j, i, -temp2);
+				addRow(ans, j, i, -temp2);
 			}
 		}
 		//now there is only one 1 in colum i
@@ -284,9 +322,10 @@ Matrix* calc_reverse_Matrix(Matrix* p){
 }
 
 /*
-* X * p2 = p1, p1/p2 = X,Error
+* X * p2 = p1, p1/p2 = X, can't have ans, Error
 */
-Matrix* calc_div_Matrix(Matrix* p1, Matrix* p2){
+Matrix* calc_div_Matrix(Matrix* p1, Matrix* p2)
+{
 	Matrix *temp = NULL;
 
 	if (p1 == NULL || p2 == NULL)
@@ -311,125 +350,77 @@ Matrix* calc_div_Matrix(Matrix* p1, Matrix* p2){
 	return ans;
 }
 
-void ex_Matrix(Matrix* p,int n){
-	if (p == NULL);
-	//矩阵不存在
-	else if (p->m != p->n);
-	//矩阵行列不相同
-	else{
-		if (stor_type(p) & 1){
-			stor_createAns(0, p->m, p->n, 1);
-			ex1(p->pd, p->m);
-		}
-		else{
-			stor_createAns(0, p->m, p->n, 0);
-			ex0(p->pl, p->m);
+/*
+*can't have ans, Error
+*/
+Matrix* calc_ex_Matrix(Matrix* p,int ex)
+{
+	Matrix *temp, *temp2 = NULL;
+	int i, j, k, n;
+
+	if (p == NULL)
+	{
+		//Error
+		return NULL;
+	}
+	if (p->m != p->n)
+	{
+		//Error
+		return NULL;
+	}
+	n = p->m;
+	if (!stor_createMatrix(temp, n, n))
+	{
+		//Error
+		return NULL;
+	}
+	if (!stor_createMatrix(temp2, n, n))
+	{
+		//Error
+		return NULL;
+	}
+	stor_assign(temp, p);
+	for (i = 0; i < n; i++)
+	{
+		for (j = 0; j < n; j++)
+		{
+			*stor_entry(temp2, i, j) = (i == j) ? 1 : 0;
 		}
 	}
-}
-
-static void ex1(double** p, int m){
-	int i, j, n;
-	double** temp, **x;
-	n = m - 1;
-		temp = (double**)malloc(sizeof(double*)*m);
-		x = (double**)malloc(sizeof(double*)*m);
-		for (i = 0; i < m; i++){
-		temp[i] = (double*)malloc(sizeof(double)*m);
-		x[i] = (double*)malloc(sizeof(double)*m);
+	while (ex)
+	{
+		if (ex % 2)
+		{
+			calc_mul_Matrix(temp, temp2);
+			stor_assign(temp2, ans);
 		}
-	for (i = 0; i < m; i++)
-		for (j = 0; j < m; j++)
-			*(x[i] + j) = *(temp[i] + j) = *(p[i] + j);
-	while (n > 0){
-		if ((n % 2) == 1)
-			temp = ex1_mul(temp, x, m);
-		x = ex1_mul(x, x, m);
-		n /= 2;
+		calc_mul_Matrix(temp, temp);
+		stor_assign(temp, ans);
+		ex /= 2;
 	}
-	for (i = 0; i < m; i++)
-		for (j = 0; j < m; j++)
-			*(double*)stor_ansEntry(0, i, j) = *(temp[i] + j);
-	free(temp);
-	free(x);
+	stor_assign(ans, temp2);
+	stor_freeMatrix(temp);
+	stor_freeMatrix(temp2);
+
+	return ans;
 }
 
-static void ex0(long** p, int m){
-	int i, j, n;
-	long** temp, **x;
-	n = m - 1;
-	temp = (long**)malloc(sizeof(long*)*m);
-	x = (long**)malloc(sizeof(long*)*m);
-	for (i = 0; i < m; i++){
-		temp[i] = (long*)malloc(sizeof(long)*m);
-		x[i] = (long*)malloc(sizeof(double)*m);
-	}
-	for (i = 0; i < m; i++)
-		for (j = 0; j < m; j++)
-			*(x[i] + j) = *(temp[i] + j) = *(p[i] + j);
-	while (n> 0){
-		if ((n % 2) == 1)
-			temp = ex0_mul(temp, x, m);
-		x = ex0_mul(x, x, m);
-		n /= 2;
-	}
-	for (i = 0; i < m; i++)
-		for (j = 0; j < m; j++)
-			*(long*)stor_ansEntry(0, i, j) = *(temp[i] + j);
-	free(temp);
-	free(x);
-}
-
-static double **ex1_mul(double** p1, double** p2, int m){
-	int i, j, k;
-	double** temp;
-	temp = (double**)malloc(sizeof(double*)*m);
-	for (i = 0; i < m; i++)
-		temp[i] = (double*)malloc(sizeof(double)*m);
-	for (i = 0; i < m; i++)
-		for (j = 0; j < m; j++){
-			*(temp[i] + j) = 0;
-			for (k = 0; k < m; k++)
-				*(temp[i] + j) += *(p1[i] + k)**(p2[k] + j);
-		}
-	free(p1);
-	return temp;
-}
-
-static long **ex0_mul(long** p1, long** p2, int m){
-	int i, j, k;
-	long** temp;
-	temp = (long**)malloc(sizeof(long*)*m);
-	for (i = 0; i < m; i++)
-		temp[i] = (long*)malloc(sizeof(long)*m);
-	for (i = 0; i < m; i++)
-		for (j = 0; j < m; j++){
-			*(temp[i] + j) = 0;
-			for (k = 0; k < m; k++)
-				*(temp[i] + j) += *(p1[i] + k)**(p2[k] + j);
-		}
-	free(p1);
-	return temp;
-}
-
-double sum_Matrix(Matrix* p){
-	double sum = 0;
+/*
+* return value(ans only 1*1) should be treated as double, can't have ans, Error
+*/
+Matrix* sum_Matrix(Matrix* p){
 	int i, j;
-	if (p == NULL);
-	//矩阵不存在
-	else if (stor_type(p) & 1){
-		for (i = 0; i < p->m; i++)
-			for (j = 0; j < p->n; j++)
-				sum += *(p->pd[i] + j);
-		return sum;
+	if (p == NULL)
+	{
+		//Error
+		return NULL;
 	}
-	else{
-		for (i = 0; i < p->m; i++)
-			for (j = 0; j < p->n; j++)
-				sum += *(p->pl[i] + j);
-		return sum;
-	}
-	return sum;
+	stor_creatAns(1, 1);
+	*stor_entry(ans, 0, 0) = 0;
+	for (i = 0; i < p->m; i++)
+		for (j = 0; j < p->n; j++)
+			*stor_entry(ans, 0, 0) += *stor_entry(p, i, j);
+	return ans;
 }
 
 double max_Matrix(Matrix* p){
@@ -489,11 +480,11 @@ void round_Matrix(Matrix* p){
 		if (stor_type(p) & 1)
 			for (i = 0; i < p->m; i++)
 				for (j = 0; j < p->n; j++)
-					*(long*)stor_ansEntry(0, i, j) = (long)(*(p->pd[i] + j) + 0.5);
+					*(long*)stor_entry(ans, 0, i, j) = (long)(*(p->pd[i] + j) + 0.5);
 		else
 			for (i = 0; i < p->m; i++)
 				for (j = 0; j < p->n; j++)
-					*(long*)stor_ansEntry(0, i, j) = (long)*(p->pd[i] + j);
+					*(long*)stor_entry(ans, 0, i, j) = (long)*(p->pd[i] + j);
 	}
 }
 
@@ -506,11 +497,11 @@ void upper_Matrix(Matrix* p){
 		if (stor_type(p) & 1)
 			for (i = 0; i < p->m; i++)
 				for (j = 0; j < p->n; j++)
-					*(long*)stor_ansEntry(0, i, j) = (long)ceil(*(p->pd[i] + j));
+					*(long*)stor_entry(ans, 0, i, j) = (long)ceil(*(p->pd[i] + j));
 		else
 			for (i = 0; i < p->m; i++)
 				for (j = 0; j < p->n; j++)
-					*(long*)stor_ansEntry(0, i, j) = (long)*(p->pd[i] + j);
+					*(long*)stor_entry(ans, 0, i, j) = (long)*(p->pd[i] + j);
 	}
 }
 
@@ -523,11 +514,11 @@ void lower_Matrix(Matrix* p){
 		if (stor_type(p) & 1)
 			for (i = 0; i < p->m; i++)
 				for (j = 0; j < p->n; j++)
-					*(long*)stor_ansEntry(0, i, j) = (long)floor(*(p->pd[i] + j));
+					*(long*)stor_entry(ans, 0, i, j) = (long)floor(*(p->pd[i] + j));
 		else
 			for (i = 0; i < p->m; i++)
 				for (j = 0; j < p->n; j++)
-					*(long*)stor_ansEntry(0, i, j) = *(p->pl[i] + j);
+					*(long*)stor_entry(ans, 0, i, j) = *(p->pl[i] + j);
 	}
 }
 
@@ -540,13 +531,13 @@ void reverse_Matrix(Matrix* p){
 			stor_createAns(0, p->n, p->m, 1);
 			for (i = 0; i < p->n; i++)
 				for (j = 0; j < p->m; j++)
-					*(double*)stor_ansEntry(0, i, j) = *(p->pd[j] + i);
+					*(double*)stor_entry(ans, 0, i, j) = *(p->pd[j] + i);
 		}
 		else{
 			stor_createAns(0, p->n, p->m, 0);
 			for (i = 0; i < p->n; i++)
 				for (j = 0; j < p->m; j++)
-					*(double*)stor_ansEntry(0, i, j) = *(p->pl[j] + i);
+					*(double*)stor_entry(ans, 0, i, j) = *(p->pl[j] + i);
 		}
 	}
 }
@@ -782,11 +773,11 @@ void rref_Matrix(Matrix* p){
 		if (stor_type(p) & 1)
 			for (i = 0; i < p->m; i++)
 				for (j = 0; j < p->n; j++)
-					*(double*)stor_ansEntry(0, i, j) = *(p->pd[i] + j);
+					*(double*)stor_entry(ans, 0, i, j) = *(p->pd[i] + j);
 		else
 			for (i = 0; i < p->m; i++)
 				for (j = 0; j < p->n; j++)
-					*(double*)stor_ansEntry(0, i, j) = *(p->pl[i] + j);
+					*(double*)stor_entry(ans, 0, i, j) = *(p->pl[i] + j);
 	}
 	rref(p->m);
 }
@@ -797,14 +788,14 @@ void rref(int m){
 	for (j = 0; j < m; j++){
 		max_row = j;
 		for (i = j; i < m; i++){
-			if (fabs(*(double*)stor_ansEntry(0, i, j)) > fabs(*(double*)stor_ansEntry(0, max_row, j)))
+			if (fabs(*(double*)stor_entry(ans, 0, i, j)) > fabs(*(double*)stor_entry(ans, 0, max_row, j)))
 				max_row = i;
 			if (max_row != j)
 				swap(j, max_row, m);
 			for (i = j + 1; i < m; i++){
-				temp = *(double*)stor_ansEntry(0, i, j) / *(double*)stor_ansEntry(0, j, j);
+				temp = *(double*)stor_entry(ans, 0, i, j) / *(double*)stor_entry(ans, 0, j, j);
 				for (k = j; k < m ; k++)
-					*(double*)stor_ansEntry(0, i, k) -= *(double*)stor_ansEntry(0, j, k) * temp;
+					*(double*)stor_entry(ans, 0, i, k) -= *(double*)stor_entry(ans, 0, j, k) * temp;
 			}
 		}
 	}
@@ -815,9 +806,9 @@ static void swap(int m, int max_row, int n)
 	int k;
 	double temp;
 	for (k = m; k <= n + 1; k++){
-		temp = *(double*)stor_ansEntry(0, m, k);
-		*(double*)stor_ansEntry(0, m, k) = *(double*)stor_ansEntry(0, max_row, k);
-		*(double*)stor_ansEntry(0, max_row, k) = temp;
+		temp = *(double*)stor_entry(ans, 0, m, k);
+		*(double*)stor_entry(ans, 0, m, k) = *(double*)stor_entry(ans, 0, max_row, k);
+		*(double*)stor_entry(ans, 0, max_row, k) = temp;
 	}
 }
 
@@ -854,9 +845,9 @@ static int feature_vector(double** temp, int n){
 	for (i = 0; i < n; i++)
 		for (j = 0; j < n; j++)
 			if (i != j) 
-				*(double*)stor_ansEntry(0, i, j) = 0;
+				*(double*)stor_entry(ans, 0, i, j) = 0;
 			else 
-				*(double*)stor_ansEntry(0, i, j) = 0;
+				*(double*)stor_entry(ans, 0, i, j) = 0;
 	while (1 == 1)
 	{
 		fm = 0;
@@ -899,9 +890,9 @@ static int feature_vector(double** temp, int n){
 			}
 		for (i = 0; i < n; i++)
 		{
-			fm = *(double*)stor_ansEntry(0, i, p);
-			*(double*)stor_ansEntry(0, i, p) = fm*cn + *(double*)stor_ansEntry(0, i, q) * sn;
-			*(double*)stor_ansEntry(0, i, q) = -fm*sn + *(double*)stor_ansEntry(0, i, q) * cn;
+			fm = *(double*)stor_entry(ans, 0, i, p);
+			*(double*)stor_entry(ans, 0, i, p) = fm*cn + *(double*)stor_entry(ans, 0, i, q) * sn;
+			*(double*)stor_entry(ans, 0, i, q) = -fm*sn + *(double*)stor_entry(ans, 0, i, q) * cn;
 		}
 	}
 }
@@ -939,9 +930,9 @@ static int feature_value(double** temp, int n){
 	for (i = 0; i < n; i++)
 		for (j = 0; j < n; j++)
 			if (i != j)
-				*(double*)stor_ansEntry(0, i, j) = 0;
+				*(double*)stor_entry(ans, 0, i, j) = 0;
 			else
-				*(double*)stor_ansEntry(0, i, j) = 0;
+				*(double*)stor_entry(ans, 0, i, j) = 0;
 	while (1 == 1)
 	{
 		fm = 0;
@@ -983,7 +974,7 @@ static int feature_value(double** temp, int n){
 				*(temp[p] + p) = -fm*sn + *(temp[p] + p) * cn;
 			}
 		for (i = 0; i < n; i++)
-			*(double*)stor_ansEntry(0, i, 0) = *(temp[i] + i);
+			*(double*)stor_entry(ans, 0, i, 0) = *(temp[i] + i);
 	}
 }
 
@@ -999,12 +990,12 @@ static void opposite1(double** p, int m, int n){
 	int i, j;
 	for (i = 0; i < m; i++)
 		for (j = 0; j < n; j++)
-			*(double*)stor_ansEntry(0, i, j) = 1.0 / *(p[i] + j);
+			*(double*)stor_entry(ans, 0, i, j) = 1.0 / *(p[i] + j);
 }
 
 static void opposite0(long** p, int m, int n){
 	int i, j;
 	for (i = 0; i < m; i++)
 		for (j = 0; j < n; j++)
-			*(double*)stor_ansEntry(0, i, j) = 1.0 / *(p[i] + j);
+			*(double*)stor_entry(ans, 0, i, j) = 1.0 / *(p[i] + j);
 }

@@ -33,11 +33,6 @@ double* stor_entry(Matrix *p, int m, int n);
 Matrix* stor_createAns(int m, int n);
 
 /*
-*返回ans某一元素,m,n are scripts,Error
-*/
-double* stor_ansEntry(int m, int n);
-
-/*
 *将矩阵sour赋值给矩阵dest,Error
 */
 Matrix* stor_assign(Matrix *dest, Matrix *sour);

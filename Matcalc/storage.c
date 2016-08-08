@@ -214,20 +214,6 @@ double* stor_entry(Matrix *p, int m, int n)
 }
 
 /*
- *返回ans某一元素,m,n are scripts,Error
- */
-double* stor_ansEntry(int m, int n)
-{
-	if(m<0 || m>=ans->m
-		||n<0 || n>=ans->n)
-	{
-		//Error越界
-		return 0;
-	}
-	return ans->pd[m]+n;
-}
-
-/*
  *将矩阵sour赋值给矩阵dest,Error
  */
 Matrix* stor_assign(Matrix *dest, Matrix *sour)
