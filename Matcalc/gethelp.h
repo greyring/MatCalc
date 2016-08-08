@@ -1,4 +1,6 @@
 #pragma once
-#define _GETHELP_H_
 
+/*
+*Return help message, Error
+*/
 char* gethelp(char* cmd);

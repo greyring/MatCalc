@@ -14,7 +14,7 @@ int main(void)
 
 	fpin = stdin;
 	fpout = stdout;
-	srand(time(NULL));
+	srand((unsigned int)time(NULL));
 	stor_ini();
 
 	//strcpy(buf,"   _Matrix = [5  : .5 :       9]; \n");

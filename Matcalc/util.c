@@ -1,4 +1,5 @@
 #include "util.h"
+#include "universe.h"
 
 static void swap(int *a, int l, int r)
 {
@@ -23,6 +24,9 @@ static void insertSort(int *a, int l, int r)
 	}
 }
 
+/*
+*l and r are scripts, NoError
+*/
 void util_sort(int *a, int l, int r)
 {
 	int mid = (l + r)/2;
@@ -58,4 +62,47 @@ void util_sort(int *a, int l, int r)
 	util_sort(a, l, i-1);
 	util_sort(a, i+1, r);
 	return;
+}
+
+/*
+*isZero, NoError
+*/
+int util_isZero(double d)
+{
+	if (fabs(d) < DBL_EPSILON)
+	{
+		return 1;
+	}
+	return 0;
+}
+
+/*
+*isLong, NoError
+*/
+int util_isLong(double d)
+{
+	if (fabs((long)d - d) < DBL_EPSILON)
+	{
+		return 1;
+	}
+	return 0;
+}
+
+/*
+*swap, NoError
+*/
+void util_swap(double *d1, double *d2)
+{
+	double temp;
+	temp = *d1;
+	*d1 = *d2;
+	*d2 = temp;
+}
+
+/*
+*may overflow,NoError
+*/
+void util_strcpy(char *dest, char *sour)
+{
+	memcpy(dest, sour, sizeof(char)*strlen(sour) + 1);
 }

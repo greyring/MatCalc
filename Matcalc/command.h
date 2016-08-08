@@ -1,5 +1,4 @@
 #pragma once
-#define _COMMAND_H_
 
 #include "universe.h"
 

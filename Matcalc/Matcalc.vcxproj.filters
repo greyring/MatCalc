@@ -14,4 +14,90 @@
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="calculate.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="command.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="gethelp.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="storage.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="universe(8.5).h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="universe.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="util.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="calculate.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="command.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="gethelp.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="main.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="storage.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="util.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\附加文件\main.txt">
+      <Filter>资源文件</Filter>
+    </Text>
+    <Text Include="..\附加文件\notice.txt">
+      <Filter>资源文件</Filter>
+    </Text>
+    <Text Include="..\附加文件\补充条件.txt">
+      <Filter>资源文件</Filter>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\附加文件\MatCalc.pdf">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\附加文件\MatCalc实验报告.pdf">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\附加文件\README.md">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\附加文件\watcom.doc">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\附加文件\word的label的对应表.xlsx">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\附加文件\第3章.ppt">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\附加文件\功能说明.xlsx">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\附加文件\模块说明.docx">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\附加文件\图形使用文档.doc">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\附加文件\综合实验题目-改革.rar">
+      <Filter>资源文件</Filter>
+    </None>
+  </ItemGroup>
 </Project>

@@ -110,6 +110,38 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="calculate.h" />
+    <ClInclude Include="command.h" />
+    <ClInclude Include="gethelp.h" />
+    <ClInclude Include="storage.h" />
+    <ClInclude Include="universe(8.5).h" />
+    <ClInclude Include="universe.h" />
+    <ClInclude Include="util.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="calculate.c" />
+    <ClCompile Include="command.c" />
+    <ClCompile Include="gethelp.c" />
+    <ClCompile Include="main.c" />
+    <ClCompile Include="storage.c" />
+    <ClCompile Include="util.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\附加文件\main.txt" />
+    <Text Include="..\附加文件\notice.txt" />
+    <Text Include="..\附加文件\补充条件.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\附加文件\MatCalc.pdf" />
+    <None Include="..\附加文件\MatCalc实验报告.pdf" />
+    <None Include="..\附加文件\README.md" />
+    <None Include="..\附加文件\watcom.doc" />
+    <None Include="..\附加文件\word的label的对应表.xlsx" />
+    <None Include="..\附加文件\功能说明.xlsx" />
+    <None Include="..\附加文件\图形使用文档.doc" />
+    <None Include="..\附加文件\模块说明.docx" />
+    <None Include="..\附加文件\第3章.ppt" />
+    <None Include="..\附加文件\综合实验题目-改革.rar" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,4 +1,8 @@
-#include <string.h>
+#include "universe.h"
+
+/*
+*Return help message, Error
+*/
 char* gethelp(char* cmd){
 	if (strcmp(cmd, ":") == 0)
 		return "示例：MatName = [N:x:M]\n表示产生一个行向量，元素依次为“ N, N+x, N+2x, …, M”，若只有[ N:M ]而不指定 x 表示 x = 1";

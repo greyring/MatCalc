@@ -1,5 +1,4 @@
 #pragma once
-#define _UNIVERSE_H_
 
 #include <string.h>
 #include <stdlib.h>
@@ -15,9 +14,15 @@ typedef struct
 	double **pd;
 }Matrix;
 
+typedef struct
+{
+	int *row, *colum;
+	Matrix *sour, *sub;
+}SubMatrix;
+
 typedef struct matrix_node
 {
-	Matrix matrix;
+	Matrix *matrix;
 	char* name;
 	struct matrix_node *left, *right;
 }Matrix_Node;
