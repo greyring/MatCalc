@@ -10,7 +10,7 @@
  *创建的矩阵变量都通过二分查找
  */
 static Matrix_Node *matrixHeadNode = NULL;
-static Matrix *ans = {NULL};
+Matrix *ans = NULL;
 static void freeMatrixNode(Matrix_Node *p);
 
 /*
@@ -35,7 +35,12 @@ void stor_ini(void)
 Matrix* stor_createMatrix(Matrix *p, int m, int n)
 {
 	int i;
-	
+
+	if (m == 0 || n == 0)
+	{
+		//Error
+		return NULL;
+	}
 	if (p != NULL)
 	{
 		for (i = 0; i < p->m; i++) free(p->pd[i]);
@@ -91,7 +96,7 @@ static Matrix_Node* getMatrix_Node(char* matrix_name)
 /*
  *创建一个新的矩阵节点,不新建ans,如果已存在则重新进行内存分配,Error
  */
-Matrix* stor_create(char* matrix_name, int m, int n, int type)
+Matrix* stor_create(char* matrix_name, int m, int n)
 {
 	Matrix_Node *p = NULL;
 	int flag;
@@ -118,7 +123,7 @@ Matrix* stor_create(char* matrix_name, int m, int n, int type)
 		p->right = NULL;
 		p->matrix = NULL;
 
-		return stor_createMatrix(p->matrix, m, n);
+		return (p->matrix = stor_createMatrix(p->matrix, m, n));
 	}
 	else
 	{
@@ -141,7 +146,7 @@ Matrix* stor_create(char* matrix_name, int m, int n, int type)
 					p->left = NULL;
 					p->right = NULL;
 					p->matrix = NULL;
-					return stor_createMatrix(p->matrix, m, n);
+					return (p->matrix = stor_createMatrix(p->matrix, m, n));
 				}
 				else
 				{
@@ -164,7 +169,7 @@ Matrix* stor_create(char* matrix_name, int m, int n, int type)
 					p->left = NULL;
 					p->right = NULL;
 					p->matrix = NULL;
-					return stor_createMatrix(p->matrix, m, n);
+					return (p->matrix = stor_createMatrix(p->matrix, m, n));
 				}
 				else
 				{
@@ -174,7 +179,7 @@ Matrix* stor_create(char* matrix_name, int m, int n, int type)
 		}
 	}
 	//has been created before
-	return stor_createMatrix(p->matrix, m, n);
+	return (p->matrix = stor_createMatrix(p->matrix, m, n));
 }
 
 /*
@@ -192,11 +197,11 @@ Matrix* stor_matrix(char* matrix_name)
 }
 
 /*
- *为ans分配或重新分配空间,Error
+ *为ans分配或重新分配空间,if Ans not NULL will be cleared and malloc,Error
  */
 Matrix* stor_createAns(int m, int n)
 {
-	return stor_createMatrix(ans, m, m);
+	return (ans = stor_createMatrix(ans, m, m));
 }
 
 /*
@@ -271,7 +276,7 @@ SubMatrix* stor_subMatrix(Matrix *sour, int m, int n, int *row, int *colum)
 	p->sour = sour;
 
 	p->sub = NULL;
-	if (!stor_createMatrix(p->sub, m, n))
+	if (!(p->sub = stor_createMatrix(p->sub, m, n)))
 	{
 		//Error
 		return NULL;

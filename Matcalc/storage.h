@@ -15,7 +15,7 @@ Matrix* stor_createMatrix(Matrix *p, int m, int n);
 /*
 *创建一个新的矩阵节点,不新建ans,如果已存在则重新进行内存分配,Error
 */
-Matrix* stor_create(char* matrix_name, int m, int n, int label);
+Matrix* stor_create(char* matrix_name, int m, int n);
 
 /*
 *根据名称返回相应矩阵,Error

@@ -1,34 +1,127 @@
 #pragma once
-#define _CALCULATE_H_
 
-#include "universe.h"
-#include "util.h"
-#include "storage.h"
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
+/*
+*Create a random Matrix, each entry is double between 0 to 1, will release ans, Error return NULL
+*/
+Matrix* calc_rand(int m, int n);
 
-void rand_Matrix(int m, int n);
-void zeros_Matrix(int m, int n);
-void eye_Matrix(int n);
-void add_Matrix(Matrix* p1, Matrix* p2);
-void sub_Matrix(Matrix* p1, Matrix* p2);
-void mul_Matrix(Matrix* p1, Matrix* p2);
-int inverse_Matrix(Matrix* p);
-void div_Matrix(Matrix* p1, Matrix* p2);
-void ex_Matrix(Matrix* p, int n);
-long double sum_Matrix(Matrix* p);
-long double max_Matrix(Matrix* p);
-long double min_Matrix(Matrix* p);
-void round_Matrix(Matrix* p);
-void upper_Matrix(Matrix* p);
-void lower_Matrix(Matrix* p);
-void reverse_Matrix(Matrix* p);
-long double det_Matrix(Matrix* p);
-long double norm_Matrix(Matrix* p);
-int rank_Matrix(Matrix* p);
-long double dot_Matrix(Matrix* p1, Matrix* p2);
-long double angle_Matrix(Matrix* p1, Matrix* p2);
-void rref_Matrix(Matrix* p);
-void feature_value_Matrix(Matrix* p);
-void opposite(Matrix* p);
+/*
+*Create a zero Matrix, will release ans, Error return NULL
+*/
+Matrix* calc_zeros(int m, int n);
+
+/*
+*Create a eye Matrix, will release ans, Error return NULL
+*/
+Matrix* calc_eye(int n);
+
+/*
+*Add two matrixs, Error
+*/
+Matrix* calc_add(Matrix* p1, Matrix* p2);
+
+/*
+*Sub two matrixs, Error
+*/
+Matrix* calc_sub(Matrix* p1, Matrix* p2);
+
+/*
+*Mul two matrixs, Error
+*/
+Matrix* calc_mul(Matrix* p1, Matrix* p2);
+
+/*
+*the reverse of matrix, Error
+*Todo test
+*/
+Matrix* calc_reverse(Matrix* p);
+
+/*
+* X * p2 = p1, p1/p2 = X, Error
+*/
+Matrix* calc_div(Matrix* p1, Matrix* p2);
+
+/*
+* Error
+*/
+Matrix* calc_ex(Matrix* p, int ex);
+
+/*
+* return value(ans only 1*1) should be treated as double, Error
+*/
+Matrix* calc_sum(Matrix* p);
+
+/*
+* return value(ans only 1*1) should be treated as double, Error
+*/
+Matrix* calc_max(Matrix* p);
+
+/*
+* return value(ans only 1*1) should be treated as double, Error
+*/
+Matrix* calc_min(Matrix* p);
+
+/*
+*Error
+*/
+Matrix* calc_round(Matrix* p);
+
+/*
+*Error
+*/
+Matrix* calc_upper(Matrix* p);
+
+/*
+*Error
+*/
+Matrix* calc_lower(Matrix* p);
+
+/*
+* M^T, Error
+*/
+Matrix* calc_trans(Matrix* p);
+
+/*
+* return value(ans only 1*1) should be treated as double, Error
+*/
+Matrix* calc_det(Matrix* p);
+
+/*
+* return value(ans only 1*1) should be treated as double, Error
+*/
+Matrix* calc_norm(Matrix* p);
+
+/*
+* return value(ans only 1*1) should be treated as int, Error
+*/
+Matrix* calc_rank(Matrix *p);
+
+/*
+* return value(ans only 1*1) should be treated as double, Error
+*/
+Matrix* calc_dot(Matrix* p1, Matrix* p2);
+
+/*
+* return value(ans only 1*1) should be treated as angel(0~pi), Error
+*/
+Matrix* calc_angle(Matrix* p1, Matrix* p2);
+
+/*
+* ÐÐ×î¼òÊ½£¬Error
+*/
+Matrix* calc_rref(Matrix* p);
+
+/*
+* a*M, Error
+*/
+Matrix* calc_numMul(Matrix* p, double mul);
+
+/*
+* M.^ex, Error
+*/
+Matrix* calc_everyEx(Matrix *p, int ex);
+
+/*
+* the eigvalue, Error
+*/
+Matrix* calc_eig(Matrix* p);

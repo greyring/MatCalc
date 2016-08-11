@@ -24,3 +24,8 @@ void util_swap(double *d1, double *d2);
 *may overflow,NoError
 */
 void util_strcpy(char *dest, char *sour);
+
+/*
+* ex can be negative, NoError
+*/
+double util_ex(double db, int ex);

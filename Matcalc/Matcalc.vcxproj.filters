@@ -38,12 +38,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="calculate.c">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="command.c">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="gethelp.c">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -54,6 +48,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="util.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="calculate.c">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

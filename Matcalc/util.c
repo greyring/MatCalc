@@ -106,3 +106,27 @@ void util_strcpy(char *dest, char *sour)
 {
 	memcpy(dest, sour, sizeof(char)*strlen(sour) + 1);
 }
+
+/*
+* ex can be negative, NoError
+*/
+double util_ex(double db, int ex)
+{
+	double result;
+	if (ex < 0)
+	{
+		db = (double)1.0 / db;
+		ex = -ex;
+	}
+	result = 1;
+	while (ex)
+	{
+		if (ex % 2)
+		{
+			result *= db;
+		}
+		db *= db;
+		ex /= 2;
+	}
+	return result;
+}
