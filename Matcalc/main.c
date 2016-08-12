@@ -56,17 +56,159 @@ int main(void)
 	t = calc_rand(3, 3);
 	t2 = calc_zeros(3, 3);
 	t = calc_eye(3);
-	*/
-	/*
+	
 	t = calc_eye(3);
 	t2 = calc_add(t, t);
 	t = NULL;
-	t = stor_createMatrix(t, 3, 3);
+	t = stor_createMatrix(&t, 3, 3);
 	*stor_entry(t, 1, 1) = 2;
 	t2 = calc_add(ans, t);
 	t2 = calc_sub(t2, t2);
 	t2 = calc_sub(ans, t);
 	*/
+	/*
+	stor_createMatrix(&t, 2, 3);
+	stor_createMatrix(&t2, 2, 3);
+	*stor_entry(t, 0, 0) = 3;
+	*stor_entry(t, 0, 1) = 2;
+	*stor_entry(t, 0, 2) = 1;
+	*stor_entry(t, 1, 0) = 4;
+	*stor_entry(t, 1, 1) = 5;
+	*stor_entry(t, 1, 2) = 6;
+	*stor_entry(t2, 0, 0) = 2;
+	*stor_entry(t2, 0, 1) = 2;
+	*stor_entry(t2, 0, 2) = 2;
+	*stor_entry(t2, 1, 0) = 1;
+	*stor_entry(t2, 1, 1) = 2;
+	*stor_entry(t2, 1, 2) = 3;
+	calc_add(t, t2);
+	calc_numMul(ans, -2);
+	t3 = calc_mul(t, t2);
+	calc_trans(t2);
+	calc_mul(ans, t);
+	t = ans;
+	ans = NULL;
+	calc_sum(t);
+	calc_max(t);
+	calc_min(t);
+	calc_rand(2, 2);
+	stor_freeMatrix(t);
+	t = ans;
+	ans = NULL;
+	calc_round(t);
+	calc_upper(t);
+	calc_lower(t);
+	stor_freeMatrix(t);
+	
+	stor_createMatrix(&t, 3, 3);
+	*stor_entry(t, 0, 0) = 1;
+	*stor_entry(t, 0, 1) = -1;
+	*stor_entry(t, 0, 2) = 3;
+	*stor_entry(t, 1, 0) = 2;
+	*stor_entry(t, 1, 1) = -1;
+	*stor_entry(t, 1, 2) = 4;
+	*stor_entry(t, 2, 0) = -1;
+	*stor_entry(t, 2, 1) = 2;
+	*stor_entry(t, 2, 2) = -4;
+	calc_inverse(t);
+	// -4 2 -1;4 -1 2;3 -1 1
+	t2 = ans;
+	ans = NULL;
+	calc_div(calc_eye(3), t2);
+	stor_freeMatrix(t2);
+	stor_freeMatrix(t);
 
+	calc_eye(3);
+	calc_numMul(ans, 2);
+	t = ans;
+	ans = NULL;
+	calc_ex(t, 6);
+	calc_everyEx(t, 6);
+	stor_freeMatrix(t);
+
+	stor_createMatrix(&t, 3, 3);
+	*stor_entry(t, 0, 0) = 4;
+	*stor_entry(t, 0, 1) = 2;
+	*stor_entry(t, 0, 2) = 1;
+	*stor_entry(t, 1, 0) = 3;
+	*stor_entry(t, 1, 1) = 0;
+	*stor_entry(t, 1, 2) = 2;
+	*stor_entry(t, 2, 0) = 2;
+	*stor_entry(t, 2, 1) = -1;
+	*stor_entry(t, 2, 2) = 2;
+	calc_det(t);
+	calc_rank(t);
+	*/
+    /*
+	stor_freeMatrix(t);
+	stor_createMatrix(&t, 4, 3);
+	*stor_entry(t, 0, 0) = 1;
+	*stor_entry(t, 0, 1) = 9;
+	*stor_entry(t, 0, 2) = -2;
+	*stor_entry(t, 1, 0) = 2;
+	*stor_entry(t, 1, 1) = 100;
+	*stor_entry(t, 1, 2) = -4;
+	*stor_entry(t, 2, 0) = -1;
+	*stor_entry(t, 2, 1) = 10;
+	*stor_entry(t, 2, 2) = 2;
+	*stor_entry(t, 3, 0) = 4;
+	*stor_entry(t, 3, 1) = 4;
+	*stor_entry(t, 3, 2) = -8;
+	calc_rank(t);
+	calc_add(calc_zeros(4, 3), t);
+	calc_rref(ans);
+	stor_print(ans);
+	stor_freeMatrix(t);
+	*/
+	/*
+	stor_createMatrix(&t, 1, 4);
+	*stor_entry(t, 0, 0) = 2;
+	*stor_entry(t, 0, 1) = 1;
+	*stor_entry(t, 0, 2) = 3;
+	*stor_entry(t, 0, 3) = 2;
+	stor_createMatrix(&t2, 1, 4);
+	*stor_entry(t2, 0, 0) = 1;
+	*stor_entry(t2, 0, 1) = 2;
+	*stor_entry(t2, 0, 2) = -2;
+	*stor_entry(t2, 0, 3) = 1;
+	calc_dot(t, t2);
+	calc_norm(t);
+	calc_angle(t, t2);
+
+	stor_freeMatrix(t);
+	stor_freeMatrix(t2);
+	stor_createMatrix(&t, 3, 3);
+	*stor_entry(t, 0, 0) = 5;
+	*stor_entry(t, 0, 1) = -3;
+	*stor_entry(t, 0, 2) = 2;
+	*stor_entry(t, 1, 0) = 6;
+	*stor_entry(t, 1, 1) = -4;
+	*stor_entry(t, 1, 2) = 4;
+	*stor_entry(t, 2, 0) = 4;
+	*stor_entry(t, 2, 1) = -4;
+	*stor_entry(t, 2, 2) = 5;
+	calc_eig(t);
+	stor_print(ans);
+	*/
+	/*
+	stor_createMatrix(&t, 3, 5);
+	*stor_entry(t, 0, 0) = 1;
+	*stor_entry(t, 0, 1) = 1;
+	*stor_entry(t, 0, 2) = -1;
+	*stor_entry(t, 0, 3) = -1;
+	*stor_entry(t, 0, 4) = 0;
+	*stor_entry(t, 1, 0) = 2;
+	*stor_entry(t, 1, 1) = -5;
+	*stor_entry(t, 1, 2) = 3;
+	*stor_entry(t, 1, 3) = 2;
+	*stor_entry(t, 1, 4) = 0;
+	*stor_entry(t, 2, 0) = 7;
+	*stor_entry(t, 2, 1) = -7;
+	*stor_entry(t, 2, 2) = 3;
+	*stor_entry(t, 2, 3) = 1;
+	*stor_entry(t, 2, 4) = 0;
+	calc_solve(t);
+	stor_print(ans);
+	*/
 	return 0;
 }

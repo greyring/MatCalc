@@ -65,11 +65,11 @@ void util_sort(int *a, int l, int r)
 }
 
 /*
-*isZero, NoError
+*isZero, 精度为float，NoError
 */
 int util_isZero(double d)
 {
-	if (fabs(d) < DBL_EPSILON)
+	if (fabs(d) < FLT_EPSILON)
 	{
 		return 1;
 	}
@@ -77,11 +77,11 @@ int util_isZero(double d)
 }
 
 /*
-*isLong, NoError
+*isLong, first round d, 精度为float的, NoError
 */
 int util_isLong(double d)
 {
-	if (fabs((long)d - d) < DBL_EPSILON)
+	if (fabs((floor)(d+0.5) - d) < FLT_EPSILON)
 	{
 		return 1;
 	}

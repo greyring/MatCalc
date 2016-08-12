@@ -10,7 +10,7 @@ void stor_ini(void);
 /*
 *为矩阵分配空间,p指向要分配的matrix，如果为NULL自动创建，否则先释放掉,Error
 */
-Matrix* stor_createMatrix(Matrix *p, int m, int n);
+Matrix* stor_createMatrix(Matrix **p, int m, int n);
 
 /*
 *创建一个新的矩阵节点,不新建ans,如果已存在则重新进行内存分配,Error
@@ -72,3 +72,6 @@ void stor_freeMatrix(Matrix *p);
 *释放内存，NoError
 */
 void stor_freeSubMatrix(SubMatrix *p);
+
+//test
+void stor_print(Matrix *p);

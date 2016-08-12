@@ -34,7 +34,7 @@ Matrix* calc_mul(Matrix* p1, Matrix* p2);
 *the reverse of matrix, Error
 *Todo test
 */
-Matrix* calc_reverse(Matrix* p);
+Matrix* calc_inverse(Matrix* p);
 
 /*
 * X * p2 = p1, p1/p2 = X, Error
@@ -122,6 +122,8 @@ Matrix* calc_numMul(Matrix* p, double mul);
 Matrix* calc_everyEx(Matrix *p, int ex);
 
 /*
-* the eigvalue, Error
+* the eigvalue, 有可能在数学上出问题（虚数） Error
 */
 Matrix* calc_eig(Matrix* p);
+
+Matrix* calc_solve(Matrix *p);

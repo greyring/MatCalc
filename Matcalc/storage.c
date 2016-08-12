@@ -30,9 +30,9 @@ void stor_ini(void)
 }
 
 /*
- *为矩阵分配空间,p指向要分配的matrix，如果为NULL自动创建，否则先释放掉,Error
+ *为矩阵分配空间,p is &m(m points to Matrix)，只负责创建, 默认全零，Error
  */
-Matrix* stor_createMatrix(Matrix *p, int m, int n)
+Matrix* stor_createMatrix(Matrix **p, int m, int n)
 {
 	int i;
 
@@ -41,34 +41,27 @@ Matrix* stor_createMatrix(Matrix *p, int m, int n)
 		//Error
 		return NULL;
 	}
-	if (p != NULL)
-	{
-		for (i = 0; i < p->m; i++) free(p->pd[i]);
-		free(p->pd);
-	}
-	else
-	{
-		p = (Matrix*)malloc(sizeof(Matrix));
-		p->pd = NULL;
-	}
-	p->m = m;
-	p->n = n;
-	p->pd = (double**)malloc(sizeof(double*)*m);
-	if (p->pd == NULL)
+	*p = (Matrix*)malloc(sizeof(Matrix));
+	(*p)->pd = NULL;
+
+	(*p)->m = m;
+	(*p)->n = n;
+	(*p)->pd = (double**)malloc(m * sizeof(double*));
+	if ((*p)->pd == NULL)
 	{
 		//Error
 		return NULL;
 	}
 	for (i = 0; i<m; i++)
 	{
-		p->pd[i] = (double *)malloc(sizeof(double)*n);
-		if (p->pd[i] == NULL)
+		(*p)->pd[i] = (double *)calloc(n, sizeof(double));
+		if ((*p)->pd[i] == NULL)
 		{
 			//Error
 			return NULL;
 		}
 	}
-	return p;
+	return *p;
 }
 
 /*
@@ -78,6 +71,11 @@ static Matrix_Node* getMatrix_Node(char* matrix_name)
 {
 	Matrix_Node *p = matrixHeadNode;
 	int flag;
+
+	if (matrix_name == NULL)
+	{
+		return NULL;
+	}
 	p = p->left;
 	while (p!= NULL && (flag = strcmp(matrix_name, p->name)))
 	{
@@ -101,6 +99,14 @@ Matrix* stor_create(char* matrix_name, int m, int n)
 	Matrix_Node *p = NULL;
 	int flag;
 
+	if (matrix_name == NULL)
+	{
+		return NULL;
+	}
+	if (strlen(matrix_name) == 0)
+	{
+		return NULL;
+	}
 	if(!strcmp(matrix_name, "ans"))
 	{
 		//Error
@@ -123,7 +129,7 @@ Matrix* stor_create(char* matrix_name, int m, int n)
 		p->right = NULL;
 		p->matrix = NULL;
 
-		return (p->matrix = stor_createMatrix(p->matrix, m, n));
+		return (stor_createMatrix(&(p->matrix), m, n));
 	}
 	else
 	{
@@ -146,7 +152,8 @@ Matrix* stor_create(char* matrix_name, int m, int n)
 					p->left = NULL;
 					p->right = NULL;
 					p->matrix = NULL;
-					return (p->matrix = stor_createMatrix(p->matrix, m, n));
+
+					return (stor_createMatrix(&(p->matrix), m, n));
 				}
 				else
 				{
@@ -169,7 +176,7 @@ Matrix* stor_create(char* matrix_name, int m, int n)
 					p->left = NULL;
 					p->right = NULL;
 					p->matrix = NULL;
-					return (p->matrix = stor_createMatrix(p->matrix, m, n));
+					return (stor_createMatrix(&(p->matrix), m, n));
 				}
 				else
 				{
@@ -179,7 +186,8 @@ Matrix* stor_create(char* matrix_name, int m, int n)
 		}
 	}
 	//has been created before
-	return (p->matrix = stor_createMatrix(p->matrix, m, n));
+	stor_freeMatrix(p->matrix);
+	return (stor_createMatrix(&(p->matrix), m, n));
 }
 
 /*
@@ -201,7 +209,9 @@ Matrix* stor_matrix(char* matrix_name)
  */
 Matrix* stor_createAns(int m, int n)
 {
-	return (ans = stor_createMatrix(ans, m, m));
+	if (ans != NULL)
+		stor_freeMatrix(ans);
+	return (stor_createMatrix(&ans, m, n));
 }
 
 /*
@@ -209,6 +219,10 @@ Matrix* stor_createAns(int m, int n)
  */
 double* stor_entry(Matrix *p, int m, int n)
 {
+	if (p == NULL)
+	{
+		return NULL;
+	}
 	if(m<0 || m>=p->m
 		||n<0 || n>=p->n)
 	{
@@ -223,15 +237,23 @@ double* stor_entry(Matrix *p, int m, int n)
  */
 Matrix* stor_assign(Matrix *dest, Matrix *sour)
 {
+	int i;
 	int m = dest->m, n = dest->n;
 
+	if (dest == NULL || sour == NULL)
+	{
+		return NULL;
+	}
 	if ((m != sour->m)||(n != sour->n))
 	{
 		//Errpr 矩阵不匹配
 		printf("Error");
 		return NULL;
 	}
-	memcpy(dest->pd, sour->pd, m*n*sizeof(double));
+	for (i = 0; i < m; i++)
+	{
+		memcpy(dest->pd[i], sour->pd[i], n * sizeof(double));
+	}
 	return dest;
 }
 
@@ -248,6 +270,10 @@ SubMatrix* stor_subMatrix(Matrix *sour, int m, int n, int *row, int *colum)
 {
 	int i,j;
 	SubMatrix* p = NULL;
+	if (sour == NULL)
+	{
+		return NULL;
+	}
 	p = (SubMatrix *)malloc(sizeof(SubMatrix));
 	if (p == NULL)
 	{
@@ -276,7 +302,7 @@ SubMatrix* stor_subMatrix(Matrix *sour, int m, int n, int *row, int *colum)
 	p->sour = sour;
 
 	p->sub = NULL;
-	if (!(p->sub = stor_createMatrix(p->sub, m, n)))
+	if (!stor_createMatrix(&(p->sub), m, n))
 	{
 		//Error
 		return NULL;
@@ -292,13 +318,17 @@ SubMatrix* stor_subMatrix(Matrix *sour, int m, int n, int *row, int *colum)
 }
 
 /*
- *将子矩阵的修改同步到大矩阵中,NoError
+ *将子矩阵的修改同步到大矩阵中,Error
  */
 Matrix* stor_mergeSubMatrix(SubMatrix *subMatrix)
 {
 	int i,j;
 	Matrix *sour = subMatrix->sour;
 
+	if (subMatrix == NULL)
+	{
+		return NULL;
+	}
 	for (i = 0; i<subMatrix->sub->m; i++)
 	{
 		for (j = 0; j<subMatrix->sub->n; j++)
@@ -318,6 +348,10 @@ Matrix* stor_mergeColum(Matrix *m1, Matrix *m2)
 	int m, n;
 	Matrix* p = NULL;
 
+	if (m1 == NULL || m2 == NULL)
+	{
+		return NULL;
+	}
 	if (m1->m != m2->m)
 	{
 		//Error
@@ -326,7 +360,7 @@ Matrix* stor_mergeColum(Matrix *m1, Matrix *m2)
 	m = m1->m;
 	n = m1->n + m2->n;
 
-	if (!(p = stor_createMatrix(p, m, n)))
+	if (!stor_createMatrix(&p, m, n))
 	{
 		//Error
 		return NULL;
@@ -353,6 +387,10 @@ Matrix* stor_mergeRow(Matrix *m1, Matrix *m2)
 	int i,j;
 	Matrix *p = NULL;
 
+	if (m1 == NULL || m2 == NULL)
+	{
+		return NULL;
+	}
 	if (m1->n != m2->n)
 	{
 		//Error
@@ -360,7 +398,7 @@ Matrix* stor_mergeRow(Matrix *m1, Matrix *m2)
 	}
 	m = m1->m + m2->m;
 	n = m1->n;
-	if (!(p = stor_createMatrix(p, m, n)))
+	if (!stor_createMatrix(&p, m, n))
 	{
 		//Error
 		return NULL;
@@ -384,6 +422,10 @@ Matrix* stor_mergeRow(Matrix *m1, Matrix *m2)
 void stor_freeMatrix(Matrix *p)
 {
 	int i;
+	if (p == NULL)
+	{
+		return;
+	}
 	for (i = 0; i < p->m; i++)
 	{
 		free(p->pd[i]);
@@ -397,6 +439,10 @@ void stor_freeMatrix(Matrix *p)
 */
 static void freeMatrixNode(Matrix_Node *p)
 {
+	if (p == NULL)
+	{
+		return;
+	}
 	stor_freeMatrix(p->matrix);
 	free(p->name);
 	free(p);
@@ -407,8 +453,26 @@ static void freeMatrixNode(Matrix_Node *p)
 */
 void stor_freeSubMatrix(SubMatrix *p)
 {
+	if (p == NULL)
+	{
+		return;
+	}
 	free(p->colum);
 	free(p->row);
 	stor_freeMatrix(p->sub);
 	free(p);
+}
+
+//test
+void stor_print(Matrix *p)
+{
+	int i, j;
+	for (i = 0; i < p->m; i++)
+	{
+		for (j = 0; j < p->n; j++)
+		{
+			printf("%.2lf  ", *stor_entry(p, i, j));
+		}
+		printf("\n");
+	}
 }
