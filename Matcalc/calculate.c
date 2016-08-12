@@ -1069,38 +1069,37 @@ Matrix* calc_eig(Matrix* p)
 		//Error
 		return NULL;
 	}
-
 	stor_assign(temp, p);
+	for (i = 0; i < p->n - 2; i++)
+	{
+		for (j = 0; j < p->m; j++)
+		{
+			*stor_entry(v, j, 0) = *stor_entry(temp, j, i);
+		}
+		if (!householder(v, i + 1))
+		{
+			//Error
+			return NULL;
+		}
+		oldAns2 = ans;
+		ans = NULL;
+		if (!calc_mul(calc_mul(oldAns2, temp), oldAns2))  //H*A*H
+		{
+			//Error
+			return NULL;
+		}
+		stor_freeMatrix(temp);
+		temp = ans;
+		ans = NULL;
+		stor_freeMatrix(oldAns2);
+	}
+	//temp is 拟三角阵
 	while (k<=500 && !isUpTrian(temp))//最多500次迭代
 	{
 		k++;
 		ans = NULL;
 		temp2 = calc_eye(p->n);
 		ans = NULL;
-		for (i = 0; i < p->n - 2; i++)
-		{
-			for (j = 0; j < p->m; j++)
-			{
-				*stor_entry(v, j, 0) = *stor_entry(temp, j, i);
-			}
-			if (!householder(v, i+1))
-			{
-				//Error
-				return NULL;
-			}
-			oldAns2 = ans;
-			ans = NULL;
-			if (!calc_mul(calc_mul(oldAns2, temp), oldAns2))  //H*A*H
-			{
-				//Error
-				return NULL;
-			}
-			stor_freeMatrix(temp);
-			temp = ans;
-			ans = NULL;
-			stor_freeMatrix(oldAns2);
-		}
-		//temp is 拟三角阵
 		for (i = 0; i < p->n - 1; i++)
 		{
 			if (!calc_eye(p->n))
@@ -1138,6 +1137,7 @@ Matrix* calc_eig(Matrix* p)
 		stor_freeMatrix(temp);
 		temp = ans;
 	}
+	//优化迭代， 好像可以证明RQ一定是拟上三角阵
 	for (i = 0; i < p->m; i++)
 	{
 		for (j = 0; j < p->n; j++)

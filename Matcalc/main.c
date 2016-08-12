@@ -174,7 +174,8 @@ int main(void)
 	calc_dot(t, t2);
 	calc_norm(t);
 	calc_angle(t, t2);
-
+	*/
+	/*
 	stor_freeMatrix(t);
 	stor_freeMatrix(t2);
 	stor_createMatrix(&t, 3, 3);
