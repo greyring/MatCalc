@@ -1,11 +1,12 @@
+/*
+只能根据浮点数的精度来判断矩阵中的元素是不是整数
+*/
 #include "universe.h"
-#include "calculate.h"
 #include "storage.h"
 #include "command.h"
 #include "util.h"
 
 FILE *fpin, *fpout;
-int uni_flag;
 char filein[256],fileout[256];
 int main(void)
 {

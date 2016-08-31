@@ -120,6 +120,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="calculate.c" />
+    <ClCompile Include="command.c" />
     <ClCompile Include="gethelp.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="storage.c" />

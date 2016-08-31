@@ -2,8 +2,9 @@
 #include "command.h"
 #include "storage.h"
 #include "calculate.h"
+#include "util.h"
 
-char buf [256];
+static char buf[512];
 static letter buf1[512];
 static word buf2[256];
 static word stack1[256];//存放操作数
@@ -12,6 +13,7 @@ static int sp1 = -1,sp2 = -1;//指向栈顶
 static int flag[256] = {0};//用于函数调用弹出，以及：的处理，如果某一层被标注，则该层弹出后要弹出下一层
 static int flagn = 0;//用于标示现在压入的东西之前是不是数字，用于-的处理,flagn只在：;,[=(%/*^以及.^后变成0，否则为1,正负号的时候直接判断一下，下一个字符除（【外都要弹出
 static int flagc = 0;//前一个是不是逗号
+static 	Matrix *newAns = NULL;//指向最新的ans
 
 /*
  *判断是否为符号
@@ -100,39 +102,6 @@ static int cmp(int k, char *s2)
 }
 
 /*
- *把字符串转化为long double
- */
-static long double a2f(char *s)
-{
-	int i = 0;
-	long double sum = 0;
-	int flag = 0;
-	long double exp;
-	while(s[i])
-	{
-		if (s[i] == '.')
-		{
-			flag = 1;
-			exp = 0.1;
-		}
-		else
-		{
-			if (flag == 0)//没遇到小数点
-			{
-				sum = sum*10 + s[i]-'0';
-			}
-			else
-			{
-				sum = sum + (s[i] - '0') * exp;
-				exp = exp/10;
-			}
-		}
-		i++;
-	}
-	return sum;
-}
-
-/*
  *根据buf2中第k个word获得相应的matrix指针
  */
 static Matrix* getMatrix(int k)
@@ -184,22 +153,20 @@ static int preference2(int label)
 }
 
 /*
- *为buf1中第i个开始的字符串(以空格结束，或者是浮点数，或者是一个符号）确定它在句子中的成分
- *长度一般不包括空格,目前label到42，scanner能产生的到41
+ *为buf1中第i个ch开始的字符串(以空格结束，或者是浮点数，或者是一个符号）确定它在句子中的成分
+ *长度一般不包括空格,目前label到49，scanner能产生的到41
  */
 static word scanner(int k)
 {
 	word w;
-	int i = 0,j;
-	long numl = 0;
-	long double numd = 0;
-	int flag;
+	int i = 0;//offset
+	double num = 0;
+	int flag = 0;
 	char str[256];
 
 	w.label = 0;
 	w.length = 1;
 	w.offset = k;
-	w.value.valued = 0;//把value里的东西置0
 
 	if (buf1[k].ch == ' ')
 	{
@@ -333,7 +300,7 @@ static word scanner(int k)
 	{
 		return w;
 	}
-//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////标识符或ans或数字
 	if(buf1[k].ch == 'a' && buf1[k+1].ch == 'n' && buf1[k+2].ch == 's' && 
 		!isalnum(buf1[k+3].ch) && buf1[k+3].ch != '_')
 	{
@@ -342,8 +309,9 @@ static word scanner(int k)
 		return w;
 	}
 
-	else if (buf1[i + k].ch == '_' || isalpha(buf1[i + k].ch))
+	else if (buf1[k].ch == '_' || isalpha(buf1[k].ch))
 	{
+		i = 1;
 		while(isalnum(buf1[i + k].ch) || buf1[i + k].ch == '_')
 		{
 			i++;
@@ -352,99 +320,49 @@ static word scanner(int k)
 		w.length = i;
 		return w;
 	}
-	else if (isdigit(buf1[i + k].ch))//整数不能以0位开头，浮点数可以，但浮点数处理的时候从.后第一位开始处理,用atof函数
+	else if (isdigit(buf1[k].ch))//整数不能以0位开头，浮点数可以，但浮点数处理的时候从.后第一位开始处理,用atof函数
 	{
-		j = 0;
-		numd = 0;
-		numl = 0;
-		if (buf1[i + k].ch == '0')
+		i = 0;
+		flag = 0;//if has dot
+		while (isdigit(buf1[k + i].ch) || buf1[k + i].ch == '.')
 		{
-			if (buf1[i + k + 1].ch == '.')
+			if (buf1[k + i].ch == '.')
 			{
-				flag = 1;
-				i = i+2;//使指向.后第一位接下来要对小数部分进行处理
-			}
-			else
-			{
-				if (buf1[i + k +1].ch == ' ')
+				if (flag == 1)
 				{
-					w.label = 39;
-					w.value.valuel = 0;
-					w.length = 1;
+					//Error
+					w.label = 0;
+					w.offset = k + i;
 					return w;
 				}
-				//Error
-				printf("illeagle num\n");
-				w.label = 0;
-				return w;
+				flag = 1;
 			}
+			str[i] = buf1[k + i].ch;
 		}
-		else//不以0开头
-		{
-			flag = 0;//先估计为long型
-			while(isdigit(buf1[i + k].ch))
-			{
-				str[j++] = buf1[i + k].ch;
-				if (flag == 0)
-				{
-					numd = numd * 10 + buf1[i + k].ch - '0';
-					numl = numl * 10 + buf1[i + k].ch - '0';
-					if (fabs(numd - numl)> DBL_EPSILON)
-					{
-						flag = 1;
-					}
-				}
-				i++;
-			}
-			if (buf1[i+k].ch !=' ' && buf1[i+k].ch !='%' && buf1[i+k].ch !='^' && buf1[i+k].ch !='*' 
-				&& buf1[i+k].ch !=')' && buf1[i+k].ch !='-' && buf1[i+k].ch !='+' && buf1[i+k].ch !=']' 
-				&& buf1[i+k].ch !=',' && buf1[i+k].ch !=';' && buf1[i+k].ch !=':' && buf1[i+k].ch !='.'
-				&& buf1[i+k].ch != 0)
-			{
-				//Error
-				printf("suppose no digit\n");
-				w.label = 0;
-				return w;
-			}
-			if (buf1[i + k].ch != '.')
-			{
-				if (flag == 0)
-				{
-					w.label = 39;
-					w.length = i;
-					w.value.valuel = numl;
-				}
-				else
-				{
-					w.label = 40;
-					w.length = i;
-					w.value.valued = numd;
-				}
-				return w;
-			}
-			flag = 1;
-			i = i+1;//使指向.后第一位接下来要对小数部分处理
-		}//对整数处理结束，如果是实数，现在i+k为小数点，str中已保存整数部分
-		str[j++] = '.';
-		while (isdigit(buf1[i + k].ch))
-		{
-			str[j++] = buf1[i+k].ch;
-			i++;
-		}
-		str[j] = 0;
+		str[i] = 0;
+
 		if (buf1[i+k].ch !=' ' && buf1[i+k].ch !='%' && buf1[i+k].ch !='^' && buf1[i+k].ch !='*' 
-				&& buf1[i+k].ch !=')' && buf1[i+k].ch !='-' && buf1[i+k].ch !='+' && buf1[i+k].ch !=']' 
-				&& buf1[i+k].ch !=',' && buf1[i+k].ch !=';' && buf1[i+k].ch !=':' && buf1[i+k].ch !='.'
-				&& buf1[i+k].ch != 0)
+			&& buf1[i+k].ch !=')' && buf1[i+k].ch !='-' && buf1[i+k].ch !='+' && buf1[i+k].ch !=']' 
+			&& buf1[i+k].ch !=',' && buf1[i+k].ch !=';' && buf1[i+k].ch !=':'&& buf1[i+k].ch != '/' 
+			&& buf1[i+k].ch != 0)
 		{
 			//Error
 			printf("suppose no digit\n");
 			w.label = 0;
+			w.offset = i + k;
+			return w;
+		}
+		num = atof(str);
+		if (util_isLong(num))
+		{
+			w.label = 39;
+			w.length = i;
+			w.value.l = floor(num + 0.5);
 			return w;
 		}
 		w.label = 40;
 		w.length = i;
-		w.value.valued = a2f(str);
+		w.value.d = floor(num + 0.5);
 		return w;
 	}
 	//Error
@@ -454,11 +372,11 @@ static word scanner(int k)
 }
 
 /*
- *去除前后空格\n，将中间连续多个\n转化为；,如果后面为]则不转化
+ *去除前后空格\n，将中间连续多个\n转化为；,如果后面为]则不转化，处理输出抑制
  *buf到buf1
- *没有出错
+ *NoError
  */
-static int format0(void)
+static void format0(void)
 {
 	char *p = buf;
 	int i = 0;
@@ -479,20 +397,23 @@ static int format0(void)
 		{
 			buf1[i].ch = ';';
 			while(*p == '\n'|| *p == ' ') p++;//整行的空格忽略
-			if (*p != ']')
+			if (*p != ']')//如果换行后是]，把最后的那个;消掉
 			{
 				i++;
 			}
 		}
 	}
-    i--;
-	buf1[i].ch = 0;
+
 	i--;
 	while(buf1[i].ch == ' ')
 	{
 		buf1[i--].ch = 0;
 	}
-	return 0;
+	if (buf1[i].ch == ';')//处理如果最末尾为分号的情况
+	{
+		uniFlag.show = 0;
+		buf1[i].ch = 0;
+	}
 }
 
 
@@ -621,16 +542,17 @@ static int format3(void)
 		{
 			if(buf2[i].label == 4 && buf2[i+1].label == 39)
 			{
-				str[0] = '.';
+				str[0] = '0';
+				str[1] = '.';
 				for (l = 0; l<buf2[i+1].length; l++)
 				{
-					str[l + 1] = buf1[l + buf2[i+1].offset].ch;
+					str[l + 2] = buf1[l + buf2[i+1].offset].ch;
 				}
-				str[l+1] = 0;
+				str[l+2] = 0;
 				buf2[j].label = 40;
 				buf2[j].length = buf2[i+1].length + 1;
 				buf2[j].offset = buf2[i].offset;
-				buf2[j].value.valued = a2f(str);
+				buf2[j].value.d = a2f(str);
 				j++;
 				i = i+2;
 			}
@@ -639,7 +561,8 @@ static int format3(void)
 				buf2[j].label = 42;
 				buf2[j].offset = buf2[i].offset;
 				buf2[j].length = buf2[i].length;
-				buf2[j++].value = buf2[i].value;
+				buf2[j].value = buf2[i].value;
+				j++;
 				i = i+2;
 			}
 			else
@@ -647,9 +570,11 @@ static int format3(void)
 				buf2[j].label = buf2[i].label;
 				buf2[j].offset = buf2[i].offset;
 				buf2[j].length = buf2[i].length;
-				buf2[j++].value = buf2[i++].value;
+				buf2[j].value = buf2[i].value;
+				i++;
+				j++;
 			}
-		}
+		}//not +-
 		else
 		{
 			k = 1;
@@ -668,8 +593,8 @@ static int format3(void)
 				buf2[j].label = 9;
 			}
 			buf2[j].offset = buf2[temp].offset;
-			buf2[j].length = 1;//因为是运算符
-			buf2[j++].value.valued = 0;
+			buf2[j].length = 1;
+			j++;
 		}
 	}
 	buf2[j].label = 0;
@@ -1302,11 +1227,15 @@ static int pop(int prefer)
 
 /*
  *根据词法进行相应的计算和判断
+ *及时处理整数和浮点数问题，不在要用的时候判断
  */
 static int parser(void)
 {
 	int i,err;
 	Matrix *temp = NULL;
+	Matrix *oldAns = ans;
+	ans = NULL;
+	newAns = ans;//防止出现错误导致ans丢失//Todo 出错时记得恢复ans
 
 	i = 0;
 	flagn = 0;
@@ -1319,7 +1248,8 @@ static int parser(void)
 				//Error
 				return buf2[i].offset;
 			}
-			if (buf2[i+1].label != 16)
+			//if (buf2[i+1].label != 16) Question
+			if (buf2[i+1].label != 8)
 			{
 				//Error
 				return buf2[i].offset;
@@ -1343,7 +1273,9 @@ static int parser(void)
 			stack1[sp1] = buf2[i];
 			if (buf2[i].label == 37)//ans
 			{
-				stack1[sp1].value.matrix = stor_ans(0);
+				stack1[sp1].label = 47;
+				stor_createMatrix(&stack1[sp1].value.m, oldAns->m, oldAns->n);
+				stor_assign(stack1[sp1].value.m, oldAns);
 			}
 			flagn = 1;
 			i++;
@@ -1360,7 +1292,7 @@ static int parser(void)
 				sp2++;
 				stack2[sp2] = buf2[i];
 				stack2[sp2].label = 43;
-				stack2[sp2].value.matrix = getMatrix(i);
+				stack2[sp2].value.m = getMatrix(i);
 				sp2++;
 				i++;
 				stack2[sp2] = buf2[i];
@@ -1372,13 +1304,13 @@ static int parser(void)
 			{
 				sp1++;
 				stack1[sp1] = buf2[i];
-				stack1[sp1].value.matrix = getMatrix(i);
+				stack1[sp1].value.m = getMatrix(i);
 				flagn = 1;
 				i++;
 			}
 		}
 		else if ((buf2[i].label >=7 && buf2[i].label <= 14 )
-			||buf2[i].label == 42)//有优先级的运算符
+			||buf2[i].label == 42)
 		{
 			if (flagn == 0)
 			{
@@ -1429,11 +1361,11 @@ static int parser(void)
 				}
 			}//flagn ==1 结束
 		}//有优先级的运算符结束
-		else if (buf2[i].label == 1)//:
+		else if (buf2[i].label == 1)//://Todo子矩阵部分如何处理
 		{
 			if (flagn == 1)
 			{
-				if (err = pop(preference2(buf2[i].label)))
+				if (err = pop(preference2(buf2[i].label)))//Todo 优化
 				{
 					//Error
 					return err;
@@ -1471,12 +1403,13 @@ static int parser(void)
 			}
 			else
 			{
-				reverse_Matrix(stack1[sp1].value.matrix);
-				temp = stor_createMatrix(temp, stack1[sp1].value.matrix->n, stack1[sp1].value.matrix->m, stor_type(stack1[sp1].value.matrix) &1);
+				calc_trans(stack1[sp1].value.m);
 				stack1[sp1].label = 47;
 				stack1[sp1].offset = stack1[sp1].offset;
 				stack1[sp1].length = 0;
-				stack1[sp1].value.matrix = temp;
+				stack1[sp1].value.m = ans;
+				newAns = ans;
+				ans = NULL;
 				flagn = 1;
 				i++;
 			}
@@ -1506,8 +1439,6 @@ static int parser(void)
 			sp1++;
 			stack1[sp1].label = 0;
 			stack1[sp1].offset = buf2[i].offset;
-			stack1[sp1].length = 0;
-			stack1[sp1].value.valued = 0;
 			flagn = 0;
 			i++;
 		}//[结束
@@ -1523,7 +1454,11 @@ static int parser(void)
 				//Error
 				return err;
 			}
-			stack1[sp1 - 2] = stack1[sp1 - 1];
+			//stack1[sp1 - 2] = stack1[sp1 - 1];
+			stack1[sp1 - 2].label = stack1[sp1 - 1].label;
+			stack1[sp1 - 2].length = stack1[sp1 - 1].length;
+			stack1[sp1 - 2].offset = stack1[sp1 - 1].offset;
+			stack1[sp1 - 2].value.m = stack1[sp1 - 1].value.m;//Todo length应该是不断相加的，检查一下
 			sp1 = sp1-2;
 			flagn = 1;
 			i++;
@@ -1571,6 +1506,7 @@ static int parser(void)
 		return err;
 	}
 	//打印结果
+	stor_freeMatrix(oldAns);
 	return 0;
 }
 		
@@ -1578,11 +1514,11 @@ static int parser(void)
  *读入的指令已放在buf中
  *没有错误返回0，有错返回1
  */
-int com_interpret(void)
+int com_interpret(char * const buf)//先处理readfrom read writeto, 对命令进行格式化，处理命令，处理错误，最后恢复uniflag
 {
 	int i, j;
 	char str[256];
-	int flag = 0;//记录上一个被压入栈的是不是
+	int flag = 0;//记录上一个被压入栈的是不是数
 	word w;
 
 	format0();
@@ -1599,7 +1535,7 @@ int com_interpret(void)
 		str[j] = 0;
 		if (w.label == 17)
 		{
-			if (fpin != NULL)
+			if (uniFlag.in == 1)
 			{
 				if (fclose(fpin))
 				{
@@ -1613,11 +1549,11 @@ int com_interpret(void)
 				return 1;
 			}
 			strcpy(filein, str);
-			uni_flag |= 1;
+			uniFlag.in = 1;
 		}
 		else
 		{
-			if (fpout != NULL)
+			if (uniFlag.out = 1)
 			{
 				if (fclose(fpout))
 				{
@@ -1628,7 +1564,7 @@ int com_interpret(void)
 			if (strlen(str) == 0)//没有跟参数
 			{
 				fileout[0] = 0;
-				uni_flag &= ~(1<<1);
+				uniFlag.out = 0;
 				return 0;
 			}
 			if ((fpout = fopen(str, "a")) == NULL)
@@ -1637,7 +1573,7 @@ int com_interpret(void)
 				return 1;
 			}
 			strcpy(fileout, str);
-			uni_flag |= 1<<1;
+			uniFlag.out = 1;
 		}
 		return 0;
 	}
@@ -1672,5 +1608,6 @@ int com_interpret(void)
 		printf("%c",buf1[i].ch);
 		i++;
 	}*/
+	uniFlag.show = 1;
 	return 0;
 }

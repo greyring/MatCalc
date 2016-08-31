@@ -81,7 +81,7 @@ int util_isZero(double d)
 */
 int util_isLong(double d)
 {
-	if (fabs((floor)(d+0.5) - d) < FLT_EPSILON)
+	if (fabs(floor(d+0.5) - d) < FLT_EPSILON)
 	{
 		return 1;
 	}
@@ -130,3 +130,4 @@ double util_ex(double db, int ex)
 	}
 	return result;
 }
+

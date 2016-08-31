@@ -27,9 +27,15 @@ typedef struct matrix_node
 	struct matrix_node *left, *right;
 }Matrix_Node;
 
+struct
+{
+	unsigned in : 1;//1:is an input file
+	unsigned out : 1;//1:is an output file
+	unsigned show : 1;//1:show the result
+
+}uniFlag;
+
 extern Matrix *ans;
-extern char buf[256];
 extern FILE* fpin;
 extern FILE* fpout;
-extern int uni_flag;
 extern char filein[256],fileout[256];

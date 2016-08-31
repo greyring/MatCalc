@@ -53,6 +53,9 @@
     <ClCompile Include="calculate.c">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="command.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\附加文件\main.txt">

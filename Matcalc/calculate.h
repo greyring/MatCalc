@@ -31,8 +31,7 @@ Matrix* calc_sub(Matrix* p1, Matrix* p2);
 Matrix* calc_mul(Matrix* p1, Matrix* p2);
 
 /*
-*the reverse of matrix, Error
-*Todo test
+*the inverse of matrix, Error
 */
 Matrix* calc_inverse(Matrix* p);
 
