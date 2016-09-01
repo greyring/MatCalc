@@ -27,9 +27,6 @@
     <ClInclude Include="storage.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="universe(8.5).h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="universe.h">
       <Filter>头文件</Filter>
     </ClInclude>

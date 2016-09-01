@@ -28,4 +28,4 @@ void util_strcpy(char *dest, char *sour);
 /*
 * ex can be negative, NoError
 */
-double util_ex(double db, int ex);
+double util_ex(double db, long ex);

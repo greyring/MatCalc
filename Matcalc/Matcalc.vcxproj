@@ -114,7 +114,6 @@
     <ClInclude Include="command.h" />
     <ClInclude Include="gethelp.h" />
     <ClInclude Include="storage.h" />
-    <ClInclude Include="universe(8.5).h" />
     <ClInclude Include="universe.h" />
     <ClInclude Include="util.h" />
   </ItemGroup>

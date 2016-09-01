@@ -260,10 +260,9 @@ Matrix* stor_assign(Matrix *dest, Matrix *sour)
 /*
  *根据已有的矩阵和相关信息产生子矩阵
  *m,n为子矩阵的长和宽
- *row 和 colum数组存放子矩阵为大矩阵的哪些行和列,最小为1行1列
+ *row 和 colum数组存放子矩阵为大矩阵的哪些行和列,最小为1行1列,自动排序，重复报错
  *生成的子矩阵放在新申请的子矩阵中
- *有错返回1，无错返回0
- *调用者要去除重复行列的错误
+ *有错返回NULL
  *Error
  */
 SubMatrix* stor_subMatrix(Matrix *sour, int m, int n, int *row, int *colum)
@@ -283,6 +282,14 @@ SubMatrix* stor_subMatrix(Matrix *sour, int m, int n, int *row, int *colum)
 
 	p->row = (int *)malloc(sizeof(int)*m);
 	util_sort(row, 0, m - 1);
+	for (i = 0; i < m-1; i++)
+	{
+		if (row[i] == row[i + 1])
+		{
+			//Error
+			return NULL;
+		}
+	}
 	if (p->row == NULL)
 	{
 		//Error
@@ -291,7 +298,15 @@ SubMatrix* stor_subMatrix(Matrix *sour, int m, int n, int *row, int *colum)
 	memcpy(p->row, row, m * sizeof(int));
 
 	p->colum = (int *)malloc(sizeof(int)*n);
-	util_sort(row, 0, n - 1);
+	util_sort(colum, 0, n - 1);
+	for (i = 0; i < n - 1; i++)
+	{
+		if (colum[i] == colum[i + 1])
+		{
+			//Error
+			return NULL;
+		}
+	}
 	if (p->colum == NULL)
 	{
 		//Error

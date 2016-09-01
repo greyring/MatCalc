@@ -110,7 +110,7 @@ void util_strcpy(char *dest, char *sour)
 /*
 * ex can be negative, NoError
 */
-double util_ex(double db, int ex)
+double util_ex(double db, long ex)
 {
 	double result;
 	if (ex < 0)
@@ -130,4 +130,3 @@ double util_ex(double db, int ex)
 	}
 	return result;
 }
-

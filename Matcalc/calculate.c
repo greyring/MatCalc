@@ -351,13 +351,49 @@ Matrix* calc_div(Matrix* p1, Matrix* p2)
 	}
 
 	ans = NULL;
-	if (!calc_inverse(p2))
+	
+	if (!calc_mul(p1, calc_inverse(p2)))
 	{
 		//Error
 		return NULL;
 	}
-	
-	calc_mul(p1, ans);
+	stor_freeMatrix(oldAns);
+	return ans;
+}
+
+/*
+* p % k,Error
+*/
+Matrix* calc_numMod(Matrix* p, long k)
+{
+	int i, j;
+	Matrix *oldAns = ans;
+
+	if (p == NULL)
+	{
+		//Error
+		return NULL;
+	}
+	ans = NULL;
+	if (!stor_createAns(p->m, p->n))
+	{
+		//Error
+		return NULL;
+	}
+	for (i = 0; i < p->m; i++)
+	{
+		for (j = 0; j < p->n; j++)
+		{
+			if (!util_isLong(*stor_entry(p, i, j)))
+			{
+				//Error
+				stor_freeMatrix(ans);
+				ans = oldAns;
+				return NULL;
+			}
+			*stor_entry(ans, i, j) = (long)floor(*stor_entry(p, i, j) + 0.5) % k;
+		}
+	}
 	stor_freeMatrix(oldAns);
 	return ans;
 }
@@ -365,7 +401,7 @@ Matrix* calc_div(Matrix* p1, Matrix* p2)
 /*
 * Error
 */
-Matrix* calc_ex(Matrix* p,int ex)
+Matrix* calc_ex(Matrix* p,long ex)
 {
 	Matrix *oldAns = ans;
 	Matrix *temp = NULL, *temp2 = NULL;
@@ -1220,5 +1256,19 @@ Matrix* calc_solve(Matrix *p)
 	}
 	stor_freeMatrix(temp);
 	stor_freeMatrix(oldAns);
+	return ans;
+}
+
+/*
+*Ò»°ãµÄ³Ë·¨
+*/
+Matrix* calc_numEx(double d, long ex)
+{
+	if (!stor_createAns(1, 1))
+	{
+		//Error
+		return NULL;
+	}
+	*stor_entry(ans, 0, 0) = util_ex(d, ex);
 	return ans;
 }

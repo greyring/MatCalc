@@ -41,9 +41,14 @@ Matrix* calc_inverse(Matrix* p);
 Matrix* calc_div(Matrix* p1, Matrix* p2);
 
 /*
+* p % k,Error
+*/
+Matrix* calc_numMod(Matrix* p, long k);
+
+/*
 * Error
 */
-Matrix* calc_ex(Matrix* p, int ex);
+Matrix* calc_ex(Matrix* p, long ex);
 
 /*
 * return value(ans only 1*1) should be treated as double, Error
@@ -126,3 +131,8 @@ Matrix* calc_everyEx(Matrix *p, int ex);
 Matrix* calc_eig(Matrix* p);
 
 Matrix* calc_solve(Matrix *p);
+
+/*
+*一般的指数计算
+*/
+Matrix* calc_numEx(double d, long ex);
