@@ -21,4 +21,5 @@ typedef struct
 	int offset;
 }letter;
 
-int com_interpret(char * const buf);
+int com_interpret();
+int com_inputNotEnd();

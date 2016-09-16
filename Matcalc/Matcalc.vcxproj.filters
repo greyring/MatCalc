@@ -33,6 +33,9 @@
     <ClInclude Include="util.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="io.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="gethelp.c">
@@ -51,6 +54,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="command.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="io.c">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

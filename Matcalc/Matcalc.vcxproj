@@ -113,6 +113,7 @@
     <ClInclude Include="calculate.h" />
     <ClInclude Include="command.h" />
     <ClInclude Include="gethelp.h" />
+    <ClInclude Include="io.h" />
     <ClInclude Include="storage.h" />
     <ClInclude Include="universe.h" />
     <ClInclude Include="util.h" />
@@ -121,6 +122,7 @@
     <ClCompile Include="calculate.c" />
     <ClCompile Include="command.c" />
     <ClCompile Include="gethelp.c" />
+    <ClCompile Include="io.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="storage.c" />
     <ClCompile Include="util.c" />

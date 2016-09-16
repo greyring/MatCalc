@@ -4,7 +4,7 @@
 #include "calculate.h"
 #include "util.h"
 
-static char buf[512];
+char buf[512];
 static letter buf1[512];
 static word buf2[256];
 static word stack1[256];//存放操作数
@@ -135,7 +135,7 @@ static int preference1(int label)
 {
 	switch(label)
 	{
-		case 1:case 3:return 2;
+		case 1:case 3:case 5:return 2;
 		case 7:return 4;
 		case 8:return 2;
 		case 9:case 10:return 6;
@@ -153,9 +153,8 @@ static int preference2(int label)
 {
 	switch(label)
 	{
-		case 1:case 3:return 3;
-		case 7:return 11;
-		case 8:return 11;
+		case 1:case 3:case 2:case 6:return 3;
+		case 7:case 8:case 5:return 11;
 		case 9:case 10:return 5;
 		case 11:case 12:case 13:return 7;
 		case 14:case 42:case 45:return 11;
@@ -250,7 +249,7 @@ static word scanner(int k)
 	else if(!cmp(k, "min"))
 	{
 		w.label = 25;
-		w.length = 4;
+		w.length = 3;
 	}
 	else if(!cmp(k, "round"))
 	{
@@ -270,7 +269,7 @@ static word scanner(int k)
 	else if(!cmp(k, "reverse"))
 	{
 		w.label = 29;
-		w.length = 6;
+		w.length = 7;
 	}
 	else if(!cmp(k, "rref"))
 	{
@@ -318,7 +317,7 @@ static word scanner(int k)
 	{
 		w.label = 37;
 		w.length = 3;
-		stor_create(&(w.value.m), ans->m, ans->n);//Todo 出错
+		stor_createMatrix(&(w.value.m), ans->m, ans->n);//Todo 出错
 		stor_assign(w.value.m, ans);
 		return w;
 	}
@@ -352,6 +351,7 @@ static word scanner(int k)
 				flag = 1;
 			}
 			str[i] = buf1[k + i].ch;
+			i++;
 		}
 		str[i] = 0;
 
@@ -376,7 +376,7 @@ static word scanner(int k)
 		}
 		w.label = 40;
 		w.length = i;
-		w.value.d = (long)floor(num + 0.5);
+		w.value.d = num;
 		return w;
 	}
 	//Error
@@ -419,6 +419,8 @@ static void format0(void)
 	}
 
 	i--;
+	buf1[i].ch = 0;
+	i--;//去掉最末尾的分号（错误引入的）
 	while(buf1[i].ch == ' ')
 	{
 		buf1[i--].ch = 0;
@@ -440,7 +442,7 @@ static int format1(void)
 {
 	int i = 0, j = 0;
 
-	if (isPunctuation(buf1[i].ch))
+	/*if (isPunctuation(buf1[i].ch))
 	{
 		//Error
 		return 1;
@@ -449,7 +451,7 @@ static int format1(void)
 	{
 		i++;
 		j++;
-	}
+	}*///Todo 验证删掉这一段没有问题
 	while(buf1[i].ch)
 	{
 		if (buf1[i].ch != ' ')
@@ -683,7 +685,7 @@ static int colon(void)
  */
 static int comma(void)
 {
-	Matrix *temp = NULL;
+	Matrix *temp = NULL;	
 
 	if (stack2[sp2].label == 1)//:
 	{
@@ -694,9 +696,16 @@ static int comma(void)
 	{
 		if (stack1[sp1].label == 39 || stack1[sp1].label == 40)//trans number to matrix
 		{
-			stack1[sp1].label = 47;
 			stor_createMatrix(&temp, 1,1);
-			*stor_entry(temp,0,0) = stack1[sp1].value.l;
+			if (stack1[sp1].label == 39)
+			{
+				*stor_entry(temp, 0, 0) = stack1[sp1].value.l;
+			}
+			else
+			{
+				*stor_entry(temp, 0, 0) = stack1[sp1].value.d;
+			}
+			stack1[sp1].label = 47;
 			stack1[sp1].value.m = temp;
 			temp = NULL;
 		}
@@ -779,7 +788,7 @@ static int semicolon(void)
 		}
 		if (stack1[sp1-2].label != 37 && stack1[sp1-2].label != 38)//不是ans或标识符
 		{
-			stor_freeMatrix(stack1[sp1].value.m);
+			stor_freeMatrix(stack1[sp1-2].value.m);
 		}
 		stack1[sp1-2].label = 47;
 		stack1[sp1-2].value.m = temp;
@@ -830,7 +839,7 @@ static int getPIP(long *l, int k)
 	}
 	if (stack1[k].label == 39)
 	{
-		*l = stack1[sp1].value.l;
+		*l = stack1[k].value.l;
 		return 0;
 	}
 	else
@@ -846,7 +855,7 @@ static int getPIP(long *l, int k)
 *从stack1中第k个取一个矩阵出来，Error
 *不会释放掉
 */
-static int getMP(Matrix *m, int k)
+static int getMP(Matrix **m, int k)
 {
 	if (!isMatrix(stack1[k].label))
 	{
@@ -855,11 +864,11 @@ static int getMP(Matrix *m, int k)
 	}
 	if (stack1[k].label == 44)
 	{
-		m = stack1[k].value.sm->sub;
+		*m = stack1[k].value.sm->sub;
 	}
 	else
 	{
-		m = stack1[k].value.m;
+		*m = stack1[k].value.m;//47,38
 	}
 	return 0;
 }
@@ -897,6 +906,10 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 				return -1;//之后再处理......
 			}
 		}
+		else if (prefer > preference1(stack2[sp2].label))//弹出完毕
+		{
+			return 0;
+		}
 		else if (stack2[sp2].label == 8)//到左括号
 		{
 			if (prefer == 0)//从右括号开始弹出
@@ -904,307 +917,306 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 				if (flag[sp2] == 1)//被标记了继续弹出，表明栈顶运算符为函数
 				{
 					sp2--;
-					switch(stack2[sp2].label)
+					switch (stack2[sp2].label)
 					{
-						case 20:case 21://rand,zeros
+					case 20:case 21://rand,zeros
+					{
+						if (getPIP(&l1, sp1))
 						{
-							if (getPIP(&l1, sp1))
+							//Error
+							return stack1[sp1].offset;
+						}
+						if (n == 1)//1个参数
+						{
+							if (stack2[sp2].label == 20)
+								calc_rand(l1, l1);//Todo 出错
+							else calc_zeros(l1, l1);
+							stack1[sp1].label = 47;
+							stack1[sp1].value.m = ans;
+							ans = NULL;
+						}
+						else if (n == 2)
+						{
+							if (getPIP(&l2, sp1 - 1))
 							{
 								//Error
-								return stack1[sp1].offset;
+								return stack1[sp1 - 1].offset;
 							}
-							if (n == 1)//1个参数
+							if (stack2[sp2].label == 20)
+								calc_rand(l2, l1);
+							else calc_zeros(l2, l1);
+							sp1--;
+							stack1[sp1].label = 47;
+							stack1[sp1].value.m = ans;
+							ans = NULL;
+						}
+						sp2--;
+						break;
+					}
+					case 22://eye
+					{
+						if (n > 1)
+						{
+							//Error
+							return stack2[sp2].offset;
+						}
+
+						if (getPIP(&l1, sp1))
+						{
+							//Error
+							return stack1[sp1].offset;
+						}
+
+						if (!calc_eye(l1))
+						{
+							//Error
+							return stack2[sp2].offset;
+						}
+						stack1[sp1].label = 47;
+						stack1[sp1].value.m = ans;
+						ans = NULL;
+						sp2--;
+						break;
+					}
+					case 23: case 24: case 25:case 31: case 32:case 34://sum,max,min,det,rank,norm
+					{
+						if (n > 1)
+						{
+							//Error
+							return stack2[sp2].offset;
+						}
+						if (getMP(&m1, sp1))
+						{
+							//Error
+							return stack1[sp1].offset;
+						}
+						switch (stack2[sp2].label)
+						{
+						case 23:  calc_sum(m1); break;
+						case 24:  calc_max(m1); break;
+						case 25:  calc_min(m1); break;
+						case 31:  calc_det(m1); break;
+						case 32:  calc_rank(m1); break;
+						case 34:  calc_norm(m1); break;
+						}
+
+						if (stack1[sp1].label == 44)//这矩阵需要被释放
+						{
+							stor_freeSubMatrix(stack1[sp1].value.sm);
+						}
+						else if (stack1[sp1].label == 47)
+						{
+							stor_freeMatrix(stack1[sp1].value.m);
+						}
+
+						if (util_isLong(*stor_entry(ans, 0, 0)))
+						{
+							stack1[sp1].label = 39;
+							stack1[sp1].value.l = (long)floor(*stor_entry(ans, 0, 0) + 0.5);
+						}
+						else
+						{
+							stack1[sp1].label = 40;
+							stack1[sp1].value.d = *stor_entry(ans, 0, 0);
+						}
+
+						ans = NULL;//Todo 唯独在计算前将ans=NULL才能使结果保存在ans里，不过通过pop到底也可以
+						sp2--;
+						break;
+					}
+					case 26: case 27: case 28:case 29:case 30:case 36://round,upper,lower,reverse,rref,feature
+					{
+						if (n > 1)
+						{
+							//Error
+							return stack2[sp2].offset;
+						}
+						if (getMP(&m1, sp1))
+						{
+							//Error
+							return stack1[sp1].offset;
+						}
+						if (stack2[sp2].label == 26)
+							calc_round(m1);
+						else if (stack2[sp2].label == 27)
+							calc_upper(m1);
+						else if (stack2[sp2].label == 28)
+							calc_lower(m1);
+						else if (stack2[sp2].label == 29)
+							calc_inverse(m1);
+						else if (stack2[sp2].label == 30)
+							calc_rref(m1);
+						else if (stack2[sp2].label == 36)
+							calc_eig(m1);
+
+						if (stack1[sp1].label == 44)//这矩阵需要被释放
+						{
+							stor_freeSubMatrix(stack1[sp1].value.sm);
+						}
+						else if (stack1[sp1].label == 47)
+						{
+							stor_freeMatrix(stack1[sp1].value.m);
+						}
+
+						stack1[sp1].label = 47;
+						stack1[sp1].value.m = ans;
+						ans = NULL;
+						sp2--;
+						break;
+					}
+					case 33:case 35://dot,angle
+					{
+						if (n != 2)
+						{
+							//Error
+							return stack2[sp2].offset;
+						}
+
+						if (getMP(&m2, sp1))
+						{
+							//Error
+							return stack1[sp1].offset;
+						}
+						if (getMP(&m1, sp1 - 1))
+						{
+							//Error
+							return stack1[sp1 - 1].offset;
+						}
+						if (stack2[sp2].label == 33)
+							calc_dot(m1, m2);
+						else calc_angle(m1, m2);
+
+						if (stack1[sp1].label == 44)//这矩阵需要被释放
+						{
+							stor_freeSubMatrix(stack1[sp1].value.sm);
+						}
+						else if (stack1[sp1].label == 47)
+						{
+							stor_freeMatrix(stack1[sp1].value.m);
+						}
+
+						if (stack1[sp1 - 1].label == 44)//这矩阵需要被释放
+						{
+							stor_freeSubMatrix(stack1[sp1 - 1].value.sm);
+						}
+						else if (stack1[sp1 - 1].label == 47)
+						{
+							stor_freeMatrix(stack1[sp1 - 1].value.m);
+						}
+
+						sp1--;
+						if (util_isLong(*stor_entry(ans, 0, 0)))
+						{
+							stack1[sp1].label = 39;
+							stack1[sp1].value.l = (long)floor(*stor_entry(ans, 0, 0) + 0.5);
+						}
+						else
+						{
+							stack1[sp1].label = 40;
+							stack1[sp1].value.d = *stor_entry(ans, 0, 0);
+						}
+						ans = NULL;
+						sp2--;
+						break;
+					}
+					case 43://取子矩阵函数
+					{
+						if (n != 2)
+						{
+							//Error
+							return stack2[sp2].offset;
+						}
+						if (stack1[sp1].label != 46
+							&& !(isMatrix(stack1[sp1].label) && stack1[sp1].value.m->m == 1))
+						{
+							//Error
+							return stack1[sp1].offset;
+						}
+						if (stack1[sp1 - 1].label != 46
+							&& !(isMatrix(stack1[sp1 - 1].label) && stack1[sp1 - 1].value.m->m == 1))
+						{
+							//Error
+							return stack1[sp1 - 1].offset;
+						}
+
+						if (stack1[sp1].label == 46)
+						{
+							l2 = stack2[sp2].value.m->n;
+							for (i = 0; i < l2; i++)
 							{
-								if (stack2[sp2].label == 20)
-									calc_rand(l1, l1);//Todo 出错
-								else calc_zeros(l1, l1);
-								stack1[sp1].label = 47;
-								stack1[sp1].value.m = ans;
-								ans = NULL;
-								break;
+								temp2[i] = i + 1;
 							}
-							else if (n == 2)
+						}
+						else
+						{
+							l2 = stack1[sp1].value.m->n;
+							for (i = 0; i < stack1[sp1].value.m->n; i++)
 							{
-								if (getPIP(&l2, sp1 - 1))
+								if (!util_isLong(*stor_entry(stack1[sp1].value.m, 0, i)))
+								{
+									//Error
+									return stack1[sp1].offset;
+								}
+								temp2[i] = (long)floor(*stor_entry(stack1[sp1].value.m, 0, i) + 0.5);
+							}
+						}
+
+						if (stack1[sp1 - 1].label == 46)
+						{
+							l1 = stack2[sp2].value.m->m;
+							for (i = 0; i < l1; i++)
+							{
+								temp1[i] = i + 1;
+							}
+						}
+						else
+						{
+							l1 = stack1[sp1 - 1].value.m->n;
+							for (i = 0; i < l1; i++)
+							{
+								if (!util_isLong(*stor_entry(stack1[sp1 - 1].value.m, 0, i)))
 								{
 									//Error
 									return stack1[sp1 - 1].offset;
 								}
-								if (stack2[sp2].label == 20)
-									calc_rand(l2, l1);
-								else calc_zeros(l2, l1);
-								sp1--;
-								stack1[sp1].label = 47;
-								stack1[sp1].value.m = ans;
-								ans = NULL;
-								break;
+								temp1[i] = (long)floor(*stor_entry(stack1[sp1 - 1].value.m, 0, i) + 0.5);
 							}
-							sp2--;
-							break;
 						}
-						case 22://eye
+						///////前面把矩阵里的数放到数组里
+						if (!(temp.value.sm = stor_subMatrix(stack2[sp2].value.m, l1, l2, temp1, temp2)))
 						{
-							if (n > 1)
-							{
-								//Error
-								return stack2[sp2].offset;
-							}
-
-							if (getPIP(&l1, sp1))
-							{
-								//Error
-								return stack1[sp1].offset;
-							}
-
-							if (!calc_eye(l1))
-							{
-								//Error
-								return stack2[sp2].offset;
-							}
-							stack1[sp1].label = 47;
-							stack1[sp1].value.m = ans;
-							ans = NULL;
-							sp2--;
-							break;
-						}
-						case 23: case 24: case 25:case 31: case 32:case 34://sum,max,min,det,rank,norm
-						{
-							if (n > 1)
-							{
-								//Error
-								return stack2[sp2].offset;
-							}
-							if (getMP(m1, sp1))
-							{
-								//Error
-								return stack1[sp1].offset;
-							}
-							switch (stack2[sp2].label)
-							{
-								case 23:  calc_sum(m1); break;
-								case 24:  calc_max(m1); break;
-								case 25:  calc_min(m1); break;
-								case 31:  calc_det(m1); break;
-								case 32:  calc_rank(m1); break;
-								case 34:  calc_norm(m1); break;
-							}
-
-							if (stack1[sp1].label == 44)//这矩阵需要被释放
-							{
-								stor_freeSubMatrix(stack1[sp1].value.sm);
-							}
-							else if (stack1[sp1].label == 47)
-							{
-								stor_freeMatrix(stack1[sp1].value.m);
-							}
-
-							if (util_isLong(*stor_entry(ans, 0, 0)))
-							{
-								stack1[sp1].label = 39;
-								stack1[sp1].value.l = (long)floor(*stor_entry(ans, 0, 0) + 0.5);
-							}
-							else
-							{
-								stack1[sp1].label = 40;
-								stack1[sp1].value.d = *stor_entry(ans, 0, 0);
-							}
-
-							ans = NULL;//Todo 唯独在计算前将ans=NULL才能使结果保存在ans里，不过通过pop到底也可以
-							sp2--;
-							break;
-						}
-						case 26: case 27: case 28:case 29:case 30:case 36://round,upper,lower,reverse,rref,feature
-						{
-							if (n > 1)
-							{
-								//Error
-								return stack2[sp2].offset;
-							}
-							if (getMP(m1, sp1))
-							{
-								//Error
-								return stack1[sp1].offset;
-							}
-							if (stack2[sp2].label == 26)
-								calc_round(m1);
-							else if (stack2[sp2].label == 27)
-								calc_upper(m1);
-							else if (stack2[sp2].label == 28)
-								calc_lower(m1);
-							else if (stack2[sp2].label == 29)
-								calc_inverse(m1);
-							else if (stack2[sp2].label == 30)
-								calc_rref(m1);
-							else if (stack2[sp2].label == 36)
-								calc_eig(m1);
-
-							if (stack1[sp1].label == 44)//这矩阵需要被释放
-							{
-								stor_freeSubMatrix(stack1[sp1].value.sm);
-							}
-							else if (stack1[sp1].label == 47)
-							{
-								stor_freeMatrix(stack1[sp1].value.m);
-							}
-
-							stack1[sp1].label = 47;
-							stack1[sp1].value.m = ans;
-							ans = NULL;
-							sp2--;
-							break;
-						}
-						case 33:case 35://dot,angle
-						{
-							if (n != 2)
-							{
-								//Error
-								return stack2[sp2].offset;
-							}
-
-							if (getMP(m2, sp1))
-							{
-								//Error
-								return stack1[sp1].offset;
-							}
-							if (getMP(m1, sp1 - 1))
-							{
-								//Error
-								return stack1[sp1 - 1].offset;
-							}
-							if (stack2[sp2].label == 33)
-								calc_dot(m1, m2);
-							else calc_angle(m1, m2);
-
-							if (stack1[sp1].label == 44)//这矩阵需要被释放
-							{
-								stor_freeSubMatrix(stack1[sp1].value.sm);
-							}
-							else if (stack1[sp1].label == 47)
-							{
-								stor_freeMatrix(stack1[sp1].value.m);
-							}
-
-							if (stack1[sp1 - 1].label == 44)//这矩阵需要被释放
-							{
-								stor_freeSubMatrix(stack1[sp1 - 1].value.sm);
-							}
-							else if (stack1[sp1 - 1].label == 47)
-							{
-								stor_freeMatrix(stack1[sp1 - 1].value.m);
-							}
-
-							sp1--;
-							if (util_isLong(*stor_entry(ans, 0, 0)))
-							{
-								stack1[sp1].label = 39;
-								stack1[sp1].value.l = (long)floor(*stor_entry(ans, 0, 0) + 0.5);
-							}
-							else
-							{
-								stack1[sp1].label = 40;
-								stack1[sp1].value.d = *stor_entry(ans, 0, 0);
-							}
-							ans = NULL;
-							sp2--;
-							break;
-						}
-						case 43://取子矩阵函数
-						{
-							if (n != 2)
-							{
-								//Error
-								return stack2[sp2].offset;
-							}
-							if (stack1[sp1].label != 46
-								&& !(isMatrix(stack1[sp1].label) && stack1[sp1].value.m->m == 1))
-							{
-								//Error
-								return stack1[sp1].offset;
-							}
-							if (stack1[sp1 - 1].label != 46
-								&& !(isMatrix(stack1[sp1 - 1].label) && stack1[sp1 - 1].value.m->m == 1))
-							{
-								//Error
-								return stack1[sp1 - 1].offset;
-							}
-
-							if (stack1[sp1].label == 46)
-							{
-								l2 = stack2[sp2].value.m->n;
-for (i = 0; i < l1; i++)
-{
-	temp2[i] = i + 1;
-}
-							}
-							else
-							{
-								l2 = stack1[sp1].value.m->n;
-								for (i = 0; i < stack1[sp1].value.m->n; i++)
-								{
-									if (!util_isLong(*stor_entry(stack1[sp1].value.m, 0, i)))
-									{
-										//Error
-										return stack1[sp1].offset;
-									}
-									temp2[i] = (long)floor(*stor_entry(stack1[sp1].value.m, 0, i) + 0.5);
-								}
-							}
-
-							if (stack1[sp1 - 1].label == 46)
-							{
-								l1 = stack2[sp2].value.m->m;
-								for (i = 0; i < l1; i++)
-								{
-									temp1[i] = i + 1;
-								}
-							}
-							else
-							{
-								l1 = stack1[sp1].value.m->m;
-								for (i = 0; i < l1; i++)
-								{
-									if (!util_isLong(*stor_entry(stack1[sp1].value.m, 0, i)))
-									{
-										//Error
-										return stack1[sp1].offset;
-									}
-									temp1[i] = (long)floor(*stor_entry(stack1[sp1].value.m, 0, i) + 0.5);
-								}
-							}
-							///////前面把矩阵里的数放到数组里
-							if (!(temp.value.sm = stor_subMatrix(stack2[sp2].value.m, l1, l2, temp1, temp2)))
-							{
-								//Error
-								return stack2[sp2].offset;
-							}
-
-							if (stack1[sp1].label == 44)//这矩阵需要被释放
-							{
-								stor_freeSubMatrix(stack1[sp1].value.sm);
-							}
-							else if (stack1[sp1].label == 47)
-							{
-								stor_freeMatrix(stack1[sp1].value.m);
-							}
-
-							if (stack1[sp1 - 1].label == 44)//这矩阵需要被释放
-							{
-								stor_freeSubMatrix(stack1[sp1 - 1].value.sm);
-							}
-							else if (stack1[sp1 - 1].label == 47)
-							{
-								stor_freeMatrix(stack1[sp1 - 1].value.m);
-							}
-
-							sp1--;
-							stack1[sp1].label = 44;
-							stack1[sp1].value.sm = temp.value.sm;
-							sp2--;
-							break;
-						}
-						default:
 							//Error
-							return -1;
+							return stack2[sp2].offset;
+						}
+
+						if (stack1[sp1].label == 44)//这矩阵需要被释放
+						{
+							stor_freeSubMatrix(stack1[sp1].value.sm);
+						}
+						else if (stack1[sp1].label == 47)
+						{
+							stor_freeMatrix(stack1[sp1].value.m);
+						}
+
+						if (stack1[sp1 - 1].label == 44)//这矩阵需要被释放
+						{
+							stor_freeSubMatrix(stack1[sp1 - 1].value.sm);
+						}
+						else if (stack1[sp1 - 1].label == 47)
+						{
+							stor_freeMatrix(stack1[sp1 - 1].value.m);
+						}
+
+						sp1--;
+						stack1[sp1].label = 44;
+						stack1[sp1].value.sm = temp.value.sm;
+						temp.value.sm = NULL;
+						sp2--;
+						break;
+					}
+					default:
+						//Error
+						return -1;
 					}//switch 结束
 					return 0;
 				}//函数处理结束
@@ -1214,16 +1226,12 @@ for (i = 0; i < l1; i++)
 					return 0;
 				}
 			}//右括号
-			else
+			else//用-1弹的时候弹到了左括号
 			{
 				//Error，没有右括号直接弹到了左括号
 				return stack2[sp2].offset;
 			}
 		}//左括号弹出
-		else if (prefer > preference1(stack2[sp2].label))//弹出完毕
-		{
-			return 0;
-		}
 		else if (stack2[sp2].label == 9 || stack2[sp2].label == 10)//-,+
 		{
 			if (isNum(sp1) && isNum(sp1 - 1))
@@ -1237,13 +1245,13 @@ for (i = 0; i < l1; i++)
 					d2 = stack1[sp1].value.d;
 				}
 
-				if (stack1[sp1-1].label == 39)
+				if (stack1[sp1 - 1].label == 39)
 				{
-					d1 = stack1[sp1-1].value.l;
+					d1 = stack1[sp1 - 1].value.l;
 				}
 				else
 				{
-					d1 = stack1[sp1-1].value.d;
+					d1 = stack1[sp1 - 1].value.d;
 				}
 
 				if (stack2[sp2].label == 9)
@@ -1269,28 +1277,25 @@ for (i = 0; i < l1; i++)
 			}
 			else if (isMatrix(stack1[sp1].label) && isMatrix(stack1[sp1 - 1].label))
 			{
-				if (stack1[sp1].label == 44)
+				getMP(&m2, sp1);//不出错由之前if保证
+
+				getMP(&m1, sp1 - 1);//不出错由之前if保证
+
+				if (stack2[sp2].label == 9)
 				{
-					m2 = stack1[sp1].value.sm->sub;
+					if (!calc_sub(m1, m2))
+					{
+						//Error
+						return stack2[sp2].offset;
+					}
 				}
 				else
 				{
-					m2 = stack1[sp1].value.m;
-				}
-
-				if (stack1[sp1-1].label == 44)
-				{
-					m1 = stack1[sp1-1].value.sm->sub;
-				}
-				else
-				{
-					m1 = stack1[sp1-1].value.m;
-				}
-
-				if (!calc_sub(m1, m2))
-				{
-					//Error
-					return stack2[sp2].offset;
+					if (!calc_add(m1, m2))
+					{
+						//Error
+						return stack2[sp2].offset;
+					}
 				}
 				sp1--;
 				stack1[sp1].label = 47;
@@ -1370,13 +1375,13 @@ for (i = 0; i < l1; i++)
 
 				if (isNum(sp1 - 1))//数乘数
 				{
-					if (stack1[sp1-1].label == 39)
+					if (stack1[sp1 - 1].label == 39)
 					{
-						d1 = stack1[sp1-1].value.l;
+						d1 = stack1[sp1 - 1].value.l;
 					}
-					else if (stack1[sp1-1].label == 40)
+					else if (stack1[sp1 - 1].label == 40)
 					{
-						d1 = stack1[sp1-1].value.d;
+						d1 = stack1[sp1 - 1].value.d;
 					}
 					tempd = d1*d2;
 					sp1--;
@@ -1394,16 +1399,9 @@ for (i = 0; i < l1; i++)
 				}
 				else if (isMatrix(stack1[sp1 - 1].label))//矩阵乘数
 				{
-					if (stack1[sp1 - 1].label == 44)
-					{
-						m1 = stack1[sp1 - 1].value.sm->sub;
-					}
-					else
-					{
-						m1 = stack1[sp1 - 1].value.m;
-					}
+					getMP(&m1, sp1 - 1);//不出错由之前if保证
 
-					if (calc_numMul(m1, d2))
+					if (!calc_numMul(m1, d2))
 					{
 						//Error
 						return stack2[sp2].offset;
@@ -1431,14 +1429,7 @@ for (i = 0; i < l1; i++)
 			}
 			else if (isMatrix(stack1[sp1].label))
 			{
-				if (stack1[sp1].label == 44)
-				{
-					m2 = stack1[sp1].value.sm->sub;
-				}
-				else
-				{
-					m2 = stack1[sp1].value.m;
-				}
+				getMP(&m2, sp1);//不出错由之前if保证
 
 				if (isNum(sp1 - 1))//数乘矩阵
 				{
@@ -1451,7 +1442,7 @@ for (i = 0; i < l1; i++)
 						d1 = stack1[sp1 - 1].value.d;
 					}
 
-					if (calc_numMul(m2, d1))
+					if (!calc_numMul(m2, d1))
 					{
 						//Error
 						return stack2[sp2].offset;
@@ -1482,7 +1473,7 @@ for (i = 0; i < l1; i++)
 						m1 = stack1[sp1 - 1].value.m;
 					}
 
-					if (calc_mul(m1, m2))
+					if (!calc_mul(m1, m2))
 					{
 						//Error
 						return stack2[sp2].offset;
@@ -1555,7 +1546,7 @@ for (i = 0; i < l1; i++)
 					//Error
 					return stack2[sp2].offset;
 				}
-				
+
 				if (stack1[sp1 - 1].label == 44)
 				{
 					stor_freeSubMatrix(stack1[sp1 - 1].value.sm);
@@ -1707,7 +1698,7 @@ for (i = 0; i < l1; i++)
 					//Error
 					return stack1[sp1].offset;
 				}
-				
+
 			}
 			else
 			{
@@ -1745,7 +1736,7 @@ for (i = 0; i < l1; i++)
 					//Error
 					return stack2[sp2].offset;
 				}
-				
+
 				tempd = *stor_entry(ans, 0, 0);
 				sp1--;
 				if (util_isLong(tempd))
@@ -1760,16 +1751,9 @@ for (i = 0; i < l1; i++)
 				}
 				sp2--;
 			}
-			else if (isMatrix(sp1 - 1))//矩阵的两种乘方
+			else if (isMatrix(stack1[sp1 - 1].label))//矩阵的两种乘方
 			{
-				if (stack1[sp1 - 1].label == 44)
-				{
-					m1 = stack1[sp1 - 1].value.sm->sub;
-				}
-				else
-				{
-					m1 = stack1[sp1 - 1].value.m;
-				}
+				getMP(&m1, sp1 - 1);
 
 				if (stack2[sp2].label == 14)//矩阵的乘方
 				{
@@ -1810,52 +1794,127 @@ for (i = 0; i < l1; i++)
 			}
 
 		}
+		else if (stack2[sp2].label == 3)//,
+		{
+			n++;
+			sp2--;
+		}
+		else if (stack2[sp2].label == 1)//:
+		{
+			colon();//Todo处理Error
+			sp2--;
+		}
 		else if (stack2[sp2].label == 7)//=
 		{
-			if (stack1[sp1-1].label != 44 && stack1[sp1-1].label != 38)
+			if (stack1[sp1 - 1].label == 44)//子矩阵
 			{
-				//Error
-				return stack1[sp1-1].offset;
-			}
-			if (!isMatrix(stack1[sp1].label))
-			{
-				//Error
-				return stack1[sp1].offset;
-			}
-			if (getMP(m1, sp1))
-			{
-				//Error
-				return stack1[sp1].offset;
-			}
-			if (stack1[sp1-1].label == 44)//子矩阵
-			{
-				if (!stor_assign(stack1[sp1 - 1].value.sm->sub, m1))
+				if (isMatrix(stack1[sp1].label))//矩阵赋值到子矩阵
+				{
+					if (getMP(&m1, sp1))
+					{
+						//Error
+						return stack1[sp1].offset;
+					}
+					if (!stor_assign(stack1[sp1 - 1].value.sm->sub, m1))
+					{
+						//Error
+						return stack2[sp2].offset;
+					}
+					if (!stor_mergeSubMatrix(stack1[sp1 - 1].value.sm))
+					{
+						//Error
+						return stack2[sp2].offset;
+					}
+					if (stack1[sp1].label == 44)
+					{
+						stor_freeSubMatrix(stack1[sp1].value.sm);
+					}
+					else if (stack1[sp1].label == 47)
+					{
+						stor_freeMatrix(stack1[sp1].value.m);
+					}
+				}
+				else if (isNum(sp1))//数字赋值给子矩阵
+				{
+					if (stack1[sp1 - 1].value.sm->sub->m != 1 || stack1[sp1 - 1].value.sm->sub->n != 1)
+					{
+						//Error
+						return stack1[sp1 - 1].offset;
+					}
+					if (stack1[sp1].label == 39)
+						*stor_entry(stack1[sp1 - 1].value.sm->sub, 0, 0) = stack1[sp1].value.l;
+					else
+						*stor_entry(stack1[sp1 - 1].value.sm->sub, 0, 0) = stack1[sp1].value.d;
+					if (!stor_mergeSubMatrix(stack1[sp1 - 1].value.sm))
+					{
+						//Error
+						return stack2[sp2].offset;
+					}
+				}
+				else
 				{
 					//Error
-					return stack2[sp2].offset;
+					return stack1[sp1].offset;
 				}
-				stor_mergeSubMatrix(stack1[sp1 - 1].value.sm);
+				m1 = stack1[sp1 - 1].value.sm->sub;
+				stack1[sp1 - 1].value.sm->sub = NULL;
+				stor_freeSubMatrix(stack1[sp1 - 1].value.sm);
+				stack1[sp1 - 1].label = 47;
+				stack1[sp1 - 1].value.m = m1;
+				m1 = NULL;
 			}
-			else
+			else if (stack1[sp1 - 1].label == 38)
 			{
-				if (stack1[sp1 - 1].value.m == NULL)
+				if (!isMatrix(stack1[sp1].label))
 				{
-					for (i = 0; i<stack1[sp1 - 1].length; i++)
+					//Error
+					return stack1[sp1].offset;
+				}
+				if (getMP(&m1, sp1))
+				{
+					//Error
+					return stack1[sp1].offset;
+				}
+				if (stack1[sp1 - 1].value.m == NULL ||
+					stack1[sp1 - 1].value.m->m != m1->m || stack1[sp1 - 1].value.m->n != m1->n)//不存在或者大小不符合
+				{
+					for (i = 0; i < stack1[sp1 - 1].length; i++)
 					{
 						str[i] = buf1[stack1[sp1 - 1].offset + i].ch;
 					}
 					str[i] = 0;
-					if (stor_create(str, m1->m, m1->n))
+					if (!stor_create(str, m1->m, m1->n))
+					{
+						//Error
+						return stack1[sp1].offset;
+					}
+					if (!(stack1[sp1 - 1].value.m = stor_matrix(str)))
 					{
 						//Error
 						return stack1[sp1].offset;
 					}
 				}//Todo 检查offset
+
 				if (!stor_assign(stack1[sp1 - 1].value.m, m1))
 				{
 					//Error
 					return stack2[sp2].offset;
 				}
+				stack1[sp1 - 1].label = 47;//赋值之后当做一个矩阵
+
+				if (stack1[sp1].label == 44)
+				{
+					stor_freeSubMatrix(stack1[sp1].value.sm);
+				}
+				else if (stack1[sp1].label == 47)
+				{
+					stor_freeMatrix(stack1[sp1].value.m);
+				}
+			}
+			else
+			{
+				//Error
+				return (stack1[sp1].offset);
 			}
 			sp2--;
 			sp1--;
@@ -1869,17 +1928,17 @@ for (i = 0; i < l1; i++)
  */
 static int parser(void)
 {
-	int i,err;
+	int i, err;
 	Matrix *temp = NULL;
 	Matrix *oldAns = ans;
 	ans = NULL;
-    //防止出现错误导致ans丢失//Todo 出错时记得恢复ans//Todo 在每次计算前ans弄为NULL
+	//防止出现错误导致ans丢失//Todo 出错时记得恢复ans//Todo 在每次计算前ans弄为NULL
 	//ans的37在这个阶段还有，但是已经将值带进去了
 	i = 0;
 	flagn = 0;
 	while (buf2[i].label)
 	{
-		if (buf2[i].label >= 20 && buf2[i].label <=36)//函数
+		if (buf2[i].label >= 20 && buf2[i].label <= 36)//函数
 		{
 			if (flagn == 1)
 			{
@@ -1887,7 +1946,7 @@ static int parser(void)
 				return buf2[i].offset;
 			}
 			//if (buf2[i+1].label != 16) Question
-			if (buf2[i+1].label != 8)
+			if (buf2[i + 1].label != 8)
 			{
 				//Error
 				return buf2[i].offset;
@@ -1911,14 +1970,22 @@ static int parser(void)
 			if (buf2[i].label != 37)
 			{
 				stack1[sp1].label = buf2[i].label;
+				if (buf2[i].label == 39)
+				{
+					stack1[sp1].value.l = buf2[i].value.l;
+				}
+				else
+				{
+					stack1[sp1].value.d = buf2[i].value.d;
+				}
 			}
 			else
 			{
 				stack1[sp1].label = 47;
+				stack1[sp1].value.m = buf2[i].value.m;
 			}
 			stack1[sp1].length = buf2[i].length;
 			stack1[sp1].offset = buf2[i].offset;
-			stack1[sp1].value.m = buf2[i].value.m;
 			flagn = 1;
 			i++;
 		}
@@ -1929,15 +1996,15 @@ static int parser(void)
 				//Error
 				return buf2[i].offset;
 			}
-			if (buf2[i+1].label == 8)//标识符函数
+			if (buf2[i + 1].label == 8)//标识符函数
 			{
 				sp2++;
-				stack2[sp2] = buf2[i];
+				stack2[sp2] = buf2[i];//Todo
 				stack2[sp2].label = 43;
 				stack2[sp2].value.m = getMatrix(i);
 				sp2++;
 				i++;
-				stack2[sp2] = buf2[i];
+				stack2[sp2] = buf2[i];//Todo
 				flag[sp2] = 1;
 				flagn = 0;
 				i++;
@@ -1954,27 +2021,27 @@ static int parser(void)
 				i++;
 			}
 		}
-		else if ((buf2[i].label >=7 && buf2[i].label <= 14 )
-			||buf2[i].label == 42)
+		else if ((buf2[i].label >= 7 && buf2[i].label <= 14)
+			|| buf2[i].label == 42)
 		{
 			if (flagn == 0)
 			{
-				if(buf2[i].label == 8)//(
+				if (buf2[i].label == 8)//(
 				{
 					sp2++;
 					stack2[sp2] = buf2[i];
 					flagn = 0;
 					i++;
 				}
-				else if(buf2[i].label == 10)//+单目
+				else if (buf2[i].label == 10)//+单目
 				{
 					i++;
 					flagn = 0;
 				}
-				else if(buf2[i].label == 9)//-单目
+				else if (buf2[i].label == 9)//-单目
 				{
 					sp2++;
-					stack2[sp2]=buf2[i];
+					stack2[sp2] = buf2[i];
 					stack2[sp2].label = 45;
 					flagn = 0;
 					i++;
@@ -1992,7 +2059,7 @@ static int parser(void)
 					//Error
 					return buf2[i].offset;
 				}
-				else 
+				else
 				{
 					if (err = pop(preference2(buf2[i].label)))//pop里要进行判定
 					{
@@ -2020,12 +2087,12 @@ static int parser(void)
 				flagn = 0;
 				i++;
 			}
-			else if (stack2[sp2].label == 3)//,
+			else if (stack2[sp2].label == 3 || stack2[sp2].label == 8)//, :
 			{
 				sp1++;
 				stack1[sp1] = buf2[i];
 				stack1[sp1].label = 46;//全行列
-				flagn = 0;
+				flagn = 1;
 				i++;
 			}
 			else
@@ -2034,14 +2101,14 @@ static int parser(void)
 				return buf2[i].offset;
 			}
 		}//:结束
-		else if(buf2[i].label == 15)//'
+		else if (buf2[i].label == 15)//'
 		{
 			if (flagn == 0)
 			{
 				//Error
 				return buf2[i].offset;
 			}
-			if(!isMatrix(stack1[sp1].label))
+			if (!isMatrix(stack1[sp1].label))
 			{
 				//Error
 				return buf2[i].offset;
@@ -2058,7 +2125,7 @@ static int parser(void)
 				i++;
 			}
 		}//'结束
-		else if (buf2[i].label == 16)
+		else if (buf2[i].label == 16)//)
 		{
 			if (flagn == 0)
 			{
@@ -2070,6 +2137,10 @@ static int parser(void)
 				//Error;
 				return err;
 			}
+			if (stack2[sp2].label == 1)//:
+			{
+				colon();//Todo处理Error
+			}//两括号间只有:
 			if (err = pop(0))//pop中0表示一直弹到左括号
 			{
 				//Error;
@@ -2088,6 +2159,9 @@ static int parser(void)
 			sp1++;
 			stack1[sp1].label = 0;
 			stack1[sp1].offset = buf2[i].offset;
+			sp2++;
+			stack2[sp2].label = buf2[i].label;
+			stack2[sp2].offset = buf2[i].offset;
 			flagn = 0;
 			i++;
 		}//[结束
@@ -2097,6 +2171,11 @@ static int parser(void)
 			{
 				//Error
 				return buf2[i].offset;
+			}
+			if (err = pop(preference2(buf2[i].label)))
+			{
+				//Error
+				return err;
 			}
 			if (err = semicolon())
 			{
@@ -2108,7 +2187,13 @@ static int parser(void)
 			stack1[sp1 - 2].length = stack1[sp1 - 1].length;
 			stack1[sp1 - 2].offset = stack1[sp1 - 1].offset;
 			stack1[sp1 - 2].value.m = stack1[sp1 - 1].value.m;//Todo length应该是不断相加的，检查一下
-			sp1 = sp1-2;
+			sp1 = sp1 - 2;
+			if (stack2[sp2].label != 5)//不是[
+			{
+				//Error
+				return buf2[i].offset;
+			}
+			sp2--;
 			flagn = 1;
 			i++;
 		}//]结束
@@ -2119,13 +2204,13 @@ static int parser(void)
 				//Error
 				return buf2[i].offset;
 			}
-			if (stack1[sp1-1].label == 0 || stack1[sp1-2].label == 0)//是在定义矩阵中
+			if (err = pop(preference2(buf2[i].label)))
 			{
-				if (err = pop(preference2(buf2[i].label)))
-				{
-					//Error
-					return err;
-				}
+				//Error
+				return err;
+			}
+			if ((sp1 - 1>=0 && stack1[sp1 - 1].label == 0) || (sp1-2>=0 && stack1[sp1 - 2].label == 0))//是在定义矩阵中
+			{
 				if (err = comma())
 				{
 					//Error
@@ -2162,7 +2247,16 @@ static int parser(void)
 				//Error
 				return buf2[i].offset;
 			}
-			semicolon();
+			if (err = pop(preference2(buf2[i].label)))
+			{
+				//Error
+				return err;
+			}
+			if (err = semicolon())
+			{
+				//Error
+				return err;
+			}
 			flagn = 0;
 			i++;
 		}
@@ -2173,47 +2267,122 @@ static int parser(void)
 		return err;
 	}
 
+	//把最终结果赋值给ans
+	if (sp2 != -1 || sp1 != 0)
+	{
+		//Error
+		printf("left something");
+		return stack1[sp1].offset;
+	}
 	if (stack1[sp1].label == 44)
 	{
-		ans = stack1[sp1].value.sm->sub;
+		
+		if (!stor_assign(stor_createAns(stack1[sp1].value.sm->sub->m, 
+			stack1[sp1].value.sm->sub->n), 
+			stack1[sp1].value.sm->sub)
+			)
+		{
+			//Error
+			return stack1[sp1].offset;
+		}
 	}
 	else if (stack1[sp1].label == 47 || stack1[sp1].label == 38)
 	{
-		ans = stack1[sp1].value.m;
+		if (!stor_assign(
+			stor_createAns(stack1[sp1].value.m->m, stack1[sp1].value.m->n),
+			stack1[sp1].value.m))
+		{
+			//Error
+			return stack1[sp1].offset;
+		}
 	}
-	else if (stack1[sp1].label == 39)
+	else if (isNum(sp1))
 	{
-		stor_createAns(1, 1);//Error
-		*stor_entry(ans, 0, 0) = stack1[sp1].value.l;
-	}
-	else if (stack1[sp1].label == 40)
-	{
-		stor_createAns(1, 1);//Error
-		*stor_entry(ans, 0, 0) = stack1[sp1].value.d;
+		if (!stor_createAns(1, 1))
+		{
+			//Error
+			return stack1[sp1].offset;
+		}
+		if (stack1[sp1].label == 39)
+		{
+			*stor_entry(ans, 0, 0) = stack1[sp1].value.l;
+		}
+		else
+		{
+			*stor_entry(ans, 0, 0) = stack1[sp1].value.d;
+		}
 	}
 	else
 	{
 		//Error
 		return stack1[sp1].offset;
 	}
+
+	//往输出缓存里放东西
+	if (stack1[sp1].label == 38)
+	{
+		for (i = 0; i < stack1[sp1].length; i++)
+		{
+			iobuf[i] = buf[i + stack1[sp1].offset];
+		}
+	}
+	else
+	{
+		iobuf[0] = 'A';
+		iobuf[1] = 'n';
+		iobuf[2] = 's';
+		i = 3;
+	}
+	iobuf[i++] = '=';
+	iobuf[i++] = '[';
+	iobuf[i] = 0;
+
 	sp1--;
 
-	//打印结果
 	stor_freeMatrix(oldAns);
-	return 0;
+	return -1;
+}
+
+/*
+*只通过数量上判断[和]匹配了没有，以此判断是否结束输入
+*0 结束了
+*1 未结束
+*-1 Error
+*/
+int com_inputNotEnd(void)
+{
+	int i = 0, k = 0;
+	while (buf[i])
+	{
+		if (buf[i] == '[')
+		{
+			k++;
+		}
+		if (buf[i] == ']')
+		{
+			k--;
+		}
+		i++;
+	}
+	if (k == 0) return 0;
+	if (k > 0) return 1;
+	return -1;
 }
 		
 /*
  *读入的指令已放在buf中
  *没有错误返回0，有错返回1
  */
-int com_interpret(char * const buf)//先处理readfrom read writeto, 对命令进行格式化，处理命令，处理错误，最后恢复uniflag
+int com_interpret()//先处理readfrom read writeto, 对命令进行格式化，处理命令，处理错误
 {
 	int i, j;
+	int err;
 	char str[256];
 	int flag = 0;//记录上一个被压入栈的是不是数
 	word w;
 
+	sp1 = -1;
+	sp2 = -1;
 	format0();
 	w = scanner(0);
 	if (w.label == 17||w.label == 19)//readfrom 或 writeto
@@ -2236,7 +2405,7 @@ int com_interpret(char * const buf)//先处理readfrom read writeto, 对命令进行格式
 					return 1;
 				}
 			}
-			if(fopen_s(fpin, str, "r"))
+			if(fopen_s(&fpin, str, "r"))
 			{
 				//Error
 				return 1;
@@ -2260,7 +2429,7 @@ int com_interpret(char * const buf)//先处理readfrom read writeto, 对命令进行格式
 				uniFlag.out = 0;
 				return 0;
 			}
-			if (fopen_s(fpout, str, "a"))
+			if (fopen_s(&fpout, str, "a"))
 			{
 				//Error
 				return 1;
@@ -2285,7 +2454,11 @@ int com_interpret(char * const buf)//先处理readfrom read writeto, 对命令进行格式
 
 	format2();
 	format3();
-	parser();
+	if ((err = parser())!=-1)
+	{
+		//Error
+		return err;
+	}
 
 	/*while (buf1[i].ch)
 	{
@@ -2301,6 +2474,5 @@ int com_interpret(char * const buf)//先处理readfrom read writeto, 对命令进行格式
 		printf("%c",buf1[i].ch);
 		i++;
 	}*/
-	uniFlag.show = 1;
-	return 0;
+	return -1;
 }

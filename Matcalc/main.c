@@ -5,6 +5,7 @@
 #include "storage.h"
 #include "command.h"
 #include "util.h"
+#include "io.h"
 
 FILE *fpin, *fpout;
 char filein[256],fileout[256];
@@ -23,8 +24,26 @@ int main(void)
 
 	//strcpy(buf,"   _Matrix = [5  : .5 :       9]; \n");
 	//strcpy(buf,"  ans   =  [ 3+1   ++  -0 --4  ,  3 --+-3    +-2]\n");
-	//strcpy(buf, "_MatrixA=[1.25 3,  4.76;5.28   3 1.44\n\n1 8,1\n]\n");
+	//util_strcpy(buf, "_MatrixA=[1.25 3,  4.76;5.28   3 1.44\n\n1 8,1\n]\n");
+	//util_strcpy(buf, "a = [1,2,3;2,3,4;3,4,5]\n");
 	//com_interpret();
+	//util_strcpy(buf, "a\n");
+	//com_interpret();
+	//util_strcpy(buf, "a([1],[2]) = 1\n");
+	//com_interpret();
+	while (1)
+	{
+		uniFlag.show = 1;
+		io_input();
+		if (com_interpret()==-1)
+		{
+			io_output();
+		}
+		else
+		{
+			printf("Error\n");
+		}
+	}
 	//fputc('a',stdout);
 	//printf("%s", buf);
 
