@@ -6,6 +6,7 @@
 #include "command.h"
 #include "util.h"
 #include "io.h"
+#include "calculate.h"
 
 FILE *fpin, *fpout;
 char filein[256],fileout[256];
@@ -37,7 +38,7 @@ int main(void)
 		io_input();
 		if (com_interpret()==-1)
 		{
-			io_output();
+			io_output();//Todo不是所有都输出矩阵的
 		}
 		else
 		{

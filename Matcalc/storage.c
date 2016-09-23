@@ -19,11 +19,21 @@ static void freeMatrixNode(Matrix_Node *p);
 void stor_ini(void)
 {
 	matrixHeadNode = (Matrix_Node *)malloc(sizeof(Matrix_Node));
+	if (!matrixHeadNode)
+	{
+		//Error
+		return;
+	}
 	matrixHeadNode->matrix = NULL;
 	matrixHeadNode->left = NULL;
 	matrixHeadNode->right = NULL;
 
 	ans = (Matrix *)malloc(sizeof(Matrix));
+	if (!ans)
+	{
+		//Error
+		return;
+	}
 	ans->m = 0;
 	ans->n = 0;
 	ans->pd = NULL;
@@ -42,6 +52,11 @@ Matrix* stor_createMatrix(Matrix **p, int m, int n)
 		return NULL;
 	}
 	*p = (Matrix*)malloc(sizeof(Matrix));
+	if (!(*p))
+	{
+		//Error
+		return NULL;
+	}
 	(*p)->pd = NULL;
 
 	(*p)->m = m;
@@ -72,7 +87,7 @@ static Matrix_Node* getMatrix_Node(char* matrix_name)
 	Matrix_Node *p = matrixHeadNode;
 	int flag;
 
-	if (matrix_name == NULL)
+	if (matrix_name == NULL||p == NULL)
 	{
 		return NULL;
 	}
@@ -114,6 +129,11 @@ Matrix* stor_create(char* matrix_name, int m, int n)
 		return NULL;
 	}
 	p = matrixHeadNode;
+	if (!p)
+	{
+		//Error
+		return NULL;
+	}
 	if (p->left == NULL)//There is no node in the tree
 	{
 		p->left = (Matrix_Node *)malloc(sizeof(Matrix_Node));
@@ -227,7 +247,12 @@ double* stor_entry(Matrix *p, int m, int n)
 		||n<0 || n>=p->n)
 	{
 		//Error越界
-		return 0;
+		return NULL;
+	}
+	if (p->pd == NULL)
+	{
+		//Error
+		return NULL;
 	}
 	return p->pd[m]+n;
 }
@@ -238,12 +263,14 @@ double* stor_entry(Matrix *p, int m, int n)
 Matrix* stor_assign(Matrix *dest, Matrix *sour)
 {
 	int i;
-	int m = dest->m, n = dest->n;
+	int m, n;
 
 	if (dest == NULL || sour == NULL)
 	{
 		return NULL;
 	}
+	m = dest->m;
+	n = dest->n;
 	if ((m != sour->m)||(n != sour->n))
 	{
 		//Errpr 矩阵不匹配
@@ -252,6 +279,11 @@ Matrix* stor_assign(Matrix *dest, Matrix *sour)
 	}
 	for (i = 0; i < m; i++)
 	{
+		if (!dest->pd || !sour->pd)
+		{
+			//Error
+			return NULL;
+		}
 		memcpy(dest->pd[i], sour->pd[i], n * sizeof(double));
 	}
 	return dest;
@@ -326,7 +358,7 @@ SubMatrix* stor_subMatrix(Matrix *sour, int m, int n, int *row, int *colum)
 	{
 		for(j = 0; j<n; j++)
 		{
-			*stor_entry(p->sub, i, j) = *stor_entry(sour, row[i]-1, colum[j]-1);
+			*stor_entry(p->sub, i, j) = *stor_entry(sour, row[i]-1, colum[j]-1);//Todo 检测溢出问题
 		}
 	}
 	return p;
@@ -338,12 +370,13 @@ SubMatrix* stor_subMatrix(Matrix *sour, int m, int n, int *row, int *colum)
 Matrix* stor_mergeSubMatrix(SubMatrix *subMatrix)
 {
 	int i,j;
-	Matrix *sour = subMatrix->sour;
+	Matrix *sour;
 
-	if (subMatrix == NULL)
+	if (subMatrix == NULL||!subMatrix->sub)
 	{
 		return NULL;
 	}
+	sour = subMatrix->sour;
 	for (i = 0; i<subMatrix->sub->m; i++)
 	{
 		for (j = 0; j<subMatrix->sub->n; j++)
@@ -482,6 +515,11 @@ void stor_freeSubMatrix(SubMatrix *p)
 void stor_print(Matrix *p)
 {
 	int i, j;
+	if (!p)
+	{
+		//Error
+		return;
+	}
 	for (i = 0; i < p->m; i++)
 	{
 		for (j = 0; j < p->n; j++)

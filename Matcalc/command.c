@@ -33,14 +33,23 @@ static int isPunctuation(char ch)
  */
 static int isMatrix(int label)
 {
-	if (label != 37 && label != 38 &&  label !=44 && label != 47)//Todo 37实际已消失
+	/*if (label != 37 && label != 38 &&  label !=44 && label != 47)//Todo 37实际已消失
 	{
 		return 0;
 	}
 	else 
 	{
 		return 1;
+	}*/
+	if (label != 38 && label != 44 && label != 47)
+	{
+		return 0;
 	}
+	else
+	{
+		return 1;
+	}
+
 }
 
 /*
@@ -48,6 +57,10 @@ static int isMatrix(int label)
 */
 static int isNum(int k)
 {
+	if (k < 0)
+	{
+		return 0;
+	}
 	if (stack1[k].label == 39 || stack1[k].label == 40)
 	{
 		return 1;
@@ -71,10 +84,15 @@ static int isPInteger(word w)
 	}
 	if (w.label == 44)//子矩阵
 	{
+		if (!w.value.sm || !w.value.sm->sub)
+		{
+			//Error
+			return 0;
+		}
 		if (w.value.sm->sub->m == 1&& w.value.sm->sub->n == 1)
 		{
 			if (w.value.sm->sub->pd != NULL && w.value.sm->sub->pd[0][0]>0
-				&& util_isLong(w.value.sm->sub->pd[0][0]))//Todo pd为NULL的判断
+				&& util_isLong(w.value.sm->sub->pd[0][0]))
 			{
 				return 1;
 			}
@@ -120,6 +138,11 @@ static Matrix* getMatrix(int k)
 {
 	char str[256];
 	int i;
+	if (k < 0)
+	{
+		//Error
+		return NULL;
+	}
 	for (i = 0; i<buf2[k].length; i++)
 	{
 		str[i] = buf1[buf2[k].offset + i].ch;
@@ -618,7 +641,7 @@ static int format3(void)
 }
 
 /*
-*sp2.label == 1,正常返回0,Error
+*sp2.label == 1,正常返回-1,Error
 */
 static int colon(void)
 {
@@ -626,6 +649,11 @@ static int colon(void)
 	int i;
 	Matrix *temp = NULL;
 
+	if (sp1 < 1)
+	{
+		//Error
+		return -2;
+	}
 	if (stack1[sp1].label != 39)
 	{
 		//Error
@@ -636,8 +664,13 @@ static int colon(void)
 		//Error
 		return stack1[sp1 - 1].offset;
 	}
-	if (stack2[sp2 - 1].label == 1)//:
+	if (sp2 >= 1 && stack2[sp2 - 1].label == 1)//:
 	{
+		if (sp1 < 2)
+		{
+			//Error
+			return -2;
+		}
 		if (stack1[sp1 - 2].label != 39)
 		{
 			//Error
@@ -646,7 +679,7 @@ static int colon(void)
 		a = stack1[sp1 - 2].value.l;
 		b = stack1[sp1 - 1].value.l;
 		c = stack1[sp1].value.l;
-		if (((c - a) / b)*b != (c - a))
+		if (b == 0 || ((c - a) / b)*b != (c - a))
 		{
 			//Error
 			return stack1[sp1 - 2].offset;
@@ -677,7 +710,7 @@ static int colon(void)
 		sp1--;
 		sp2--;
 	}//两个参数结束
-	return 0;
+	return -1;
 }
 
 /*
@@ -687,11 +720,16 @@ static int comma(void)
 {
 	Matrix *temp = NULL;	
 
-	if (stack2[sp2].label == 1)//:
+	if (sp2 >= 0 && stack2[sp2].label == 1)//:
 	{
 		colon();//Todo处理Error
 	}
 
+	if (sp1 < 0)
+	{
+		//Error
+		return -2;
+	}
 	if (!isMatrix(stack1[sp1].label))
 	{
 		if (stack1[sp1].label == 39 || stack1[sp1].label == 40)//trans number to matrix
@@ -716,9 +754,14 @@ static int comma(void)
 		}
 	}
 
+	if (sp1 < 1)
+	{
+		//Error
+		return -2;
+	}
 	if (stack1[sp1-1].label==0)//only one number
 	{
-		return 0;
+		return -1;
 	}
 	else
 	{
@@ -745,7 +788,7 @@ static int comma(void)
 		temp = NULL;
 		sp1--;
 	}
-	return 0;
+	return -1;
 }
 
 /*
@@ -759,6 +802,11 @@ static int semicolon(void)
 	if (err = comma())
 	{
 		return err;
+	}
+	if (sp1 < 1)
+	{
+		//Error
+		return -2;
 	}
 	if (!isMatrix(stack1[sp1].label))
 	{
@@ -797,7 +845,7 @@ static int semicolon(void)
 	}
 	sp1++;
 	stack1[sp1].label = 0;
-	return 0;
+	return -1;
 }
 
 /*
@@ -832,6 +880,11 @@ static int letter2word(void)
 */
 static int getPIP(long *l, int k)
 {
+	if (k < 0)
+	{
+		//Error
+		return 1;
+	}
 	if (!isPInteger(stack1[k]))
 	{
 		//Error
@@ -844,6 +897,11 @@ static int getPIP(long *l, int k)
 	}
 	else
 	{
+		if (!stack1[k].value.sm || !stack1[k].value.sm->sub || !stack1[k].value.sm->sub->pd)
+		{
+			//Error
+			return 1;
+		}
 		*l = (long)floor(stack1[k].value.sm->sub->pd[0][0] + 0.5);//子矩阵
 		stor_freeSubMatrix(stack1[k].value.sm);
 		return 0;
@@ -857,6 +915,11 @@ static int getPIP(long *l, int k)
 */
 static int getMP(Matrix **m, int k)
 {
+	if (k < 0)
+	{
+		//Error
+		return 1;
+	}
 	if (!isMatrix(stack1[k].label))
 	{
 		//Error
@@ -890,25 +953,26 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 
 	if (sp2 == -1)
 	{
-		return 0;
+		return -1;
 	}//栈里没有内容
 	while (1)
 	{
 		if (sp2 == -1)//弹出到底了
 		{
-			if (prefer == -1)
+			/*if (prefer == -1)
 			{
 				return 0;
 			}
 			else
 			{
 				//Error
-				return -1;//之后再处理......
-			}
+				return -1;//之后再处理......这里不一定出错9.23
+			}*/
+			return -1;//9.23
 		}
 		else if (prefer > preference1(stack2[sp2].label))//弹出完毕
 		{
-			return 0;
+			return -1;
 		}
 		else if (stack2[sp2].label == 8)//到左括号
 		{
@@ -921,6 +985,11 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 					{
 					case 20:case 21://rand,zeros
 					{
+						if (sp1 < 0)
+						{
+							//Error
+							return -2;
+						}
 						if (getPIP(&l1, sp1))
 						{
 							//Error
@@ -937,6 +1006,11 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 						}
 						else if (n == 2)
 						{
+							if (sp1 < 1)
+							{
+								//Error
+								return -2;
+							}
 							if (getPIP(&l2, sp1 - 1))
 							{
 								//Error
@@ -961,6 +1035,11 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 							return stack2[sp2].offset;
 						}
 
+						if (sp1 < 0)
+						{
+							//Error
+							return -2;
+						}
 						if (getPIP(&l1, sp1))
 						{
 							//Error
@@ -985,6 +1064,11 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 							//Error
 							return stack2[sp2].offset;
 						}
+						if (sp1 < 0)
+						{
+							//Error
+							return -2;
+						}
 						if (getMP(&m1, sp1))
 						{
 							//Error
@@ -992,14 +1076,14 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 						}
 						switch (stack2[sp2].label)
 						{
-						case 23:  calc_sum(m1); break;
-						case 24:  calc_max(m1); break;
-						case 25:  calc_min(m1); break;
-						case 31:  calc_det(m1); break;
-						case 32:  calc_rank(m1); break;
-						case 34:  calc_norm(m1); break;
+							case 23:  calc_sum(m1); break;
+							case 24:  calc_max(m1); break;
+							case 25:  calc_min(m1); break;
+							case 31:  calc_det(m1); break;
+							case 32:  calc_rank(m1); break;
+							case 34:  calc_norm(m1); break;
 						}
-
+						
 						if (stack1[sp1].label == 44)//这矩阵需要被释放
 						{
 							stor_freeSubMatrix(stack1[sp1].value.sm);
@@ -1030,6 +1114,11 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 						{
 							//Error
 							return stack2[sp2].offset;
+						}
+						if (sp1 < 0)
+						{
+							//Error
+							return -2;
 						}
 						if (getMP(&m1, sp1))
 						{
@@ -1072,6 +1161,11 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 							return stack2[sp2].offset;
 						}
 
+						if (sp1 < 1)
+						{
+							//Error
+							return -2;
+						}
 						if (getMP(&m2, sp1))
 						{
 							//Error
@@ -1126,14 +1220,37 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 							//Error
 							return stack2[sp2].offset;
 						}
+						if (sp1 < 1)
+						{
+							//Error
+							return -2;
+						}
+						if (stack1[sp1].label == 39 && stack1[sp1 - 1].label == 39)//只取一个位置的子矩阵
+						{
+							l1 = 1;
+							l2 = 1;
+							temp1[0] = stack1[sp1 - 1].value.l;
+							temp2[0] = stack1[sp1].value.l;
+							if (!(temp.value.sm = stor_subMatrix(stack2[sp2].value.m, l1, l2, temp1, temp2)))
+							{
+								//Error
+								return stack2[sp2].offset;
+							}
+							sp1--;
+							stack1[sp1].label = 44;
+							stack1[sp1].value.sm = temp.value.sm;
+							temp.value.sm = NULL;
+							sp2--;
+							break;
+						}
 						if (stack1[sp1].label != 46
-							&& !(isMatrix(stack1[sp1].label) && stack1[sp1].value.m->m == 1))
+							&& !(isMatrix(stack1[sp1].label) && stack1[sp1].value.m && stack1[sp1].value.m->m == 1))
 						{
 							//Error
 							return stack1[sp1].offset;
 						}
 						if (stack1[sp1 - 1].label != 46
-							&& !(isMatrix(stack1[sp1 - 1].label) && stack1[sp1 - 1].value.m->m == 1))
+							&& !(isMatrix(stack1[sp1 - 1].label) && stack1[sp1 - 1].value.m && stack1[sp1 - 1].value.m->m == 1))
 						{
 							//Error
 							return stack1[sp1 - 1].offset;
@@ -1141,6 +1258,11 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 
 						if (stack1[sp1].label == 46)
 						{
+							if (!stack2[sp2].value.m)
+							{
+								//Error
+								return stack2[sp2].offset;
+							}
 							l2 = stack2[sp2].value.m->n;
 							for (i = 0; i < l2; i++)
 							{
@@ -1163,6 +1285,11 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 
 						if (stack1[sp1 - 1].label == 46)
 						{
+							if (!stack2[sp2].value.m)
+							{
+								//Error
+								return stack2[sp2].offset;
+							}
 							l1 = stack2[sp2].value.m->m;
 							for (i = 0; i < l1; i++)
 							{
@@ -1216,14 +1343,14 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 					}
 					default:
 						//Error
-						return -1;
+						return -2;
 					}//switch 结束
-					return 0;
+					return -1;
 				}//函数处理结束
 				else//遇到的是表达式的左括号
 				{
 					sp2--;
-					return 0;
+					return -1;
 				}
 			}//右括号
 			else//用-1弹的时候弹到了左括号
@@ -1234,6 +1361,11 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 		}//左括号弹出
 		else if (stack2[sp2].label == 9 || stack2[sp2].label == 10)//-,+
 		{
+			if (sp1 < 1)
+			{
+				//Error
+				return -2;
+			}
 			if (isNum(sp1) && isNum(sp1 - 1))
 			{
 				if (stack1[sp1].label == 39)
@@ -1311,6 +1443,11 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 		}
 		else if (stack2[sp2].label == 45)//单目负号
 		{
+			if (sp1 < 0)
+			{
+				//Error
+				return -2;
+			}
 			if (isNum(sp1))
 			{
 				if (stack1[sp1].label == 39)
@@ -1325,14 +1462,7 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 			}
 			else if (isMatrix(stack1[sp1].label))
 			{
-				if (stack1[sp1].label == 44)
-				{
-					m1 = stack1[sp1].value.sm->sub;
-				}
-				else
-				{
-					m1 = stack1[sp1].value.m;
-				}
+				getMP(&m1, sp1);
 
 				if (!calc_numMul(m1, -1))
 				{
@@ -1362,6 +1492,11 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 		}
 		else if (stack2[sp2].label == 13)//*
 		{
+			if (sp1 < 1)
+			{
+				//Error
+				return -2;
+			}
 			if (isNum(sp1))
 			{
 				if (stack1[sp1].label == 39)
@@ -1516,6 +1651,11 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 		}
 		else if (stack2[sp2].label == 11)// %
 		{
+			if (sp1 < 1)
+			{
+				//Error
+				return -2;
+			}
 			if (stack1[sp1].label != 39)
 			{
 				//Error
@@ -1532,14 +1672,7 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 			}
 			else if (isMatrix(stack1[sp1 - 1].label))//矩阵mod数
 			{
-				if (stack1[sp1 - 1].label == 44)
-				{
-					m1 = stack1[sp1 - 1].value.sm->sub;
-				}
-				else
-				{
-					m1 = stack1[sp1 - 1].value.m;
-				}
+				getMP(&m1, sp1 - 1);//Todo getMP可能要if
 
 				if (!calc_numMod(m1, l2))
 				{
@@ -1611,14 +1744,7 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 			}
 			else if (isMatrix(stack1[sp1 - 1].label))//矩阵除
 			{
-				if (stack1[sp1 - 1].label == 44)
-				{
-					m1 = stack1[sp1 - 1].value.sm->sub;
-				}
-				else
-				{
-					m1 = stack1[sp1 - 1].value.m;
-				}
+				getMP(&m1, sp1 - 1);
 
 				if (isNum(sp1))//矩阵除数
 				{
@@ -1631,7 +1757,7 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 						d2 = stack1[sp1].value.d;
 					}
 
-					if (!calc_numMul(m1, (double)1.0 / d2))
+					if (util_isZero(d2) || !calc_numMul(m1, (double)1.0 / d2))
 					{
 						//Error
 						return stack2[sp2].offset;
@@ -1654,14 +1780,7 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 				}
 				else if (isMatrix(stack1[sp1].label))//矩阵除矩阵
 				{
-					if (stack1[sp1].label == 44)
-					{
-						m2 = stack1[sp1].value.sm->sub;
-					}
-					else
-					{
-						m2 = stack2[sp1].value.m;
-					}
+					getMP(&m2, sp1);
 
 					if (!calc_div(m1, m2))
 					{
@@ -1708,6 +1827,11 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 		}
 		else if (stack2[sp2].label == 14 || stack2[sp2].label == 42)//^, .^
 		{
+			if (sp1 < 1)
+			{
+				//Error
+				return -2;
+			}
 			if (stack1[sp1].label != 39)
 			{
 				//Error
@@ -1806,8 +1930,18 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 		}
 		else if (stack2[sp2].label == 7)//=
 		{
+			if (sp1 < 1)
+			{
+				//Error
+				return -2;
+			}
 			if (stack1[sp1 - 1].label == 44)//子矩阵
 			{
+				if (!stack1[sp1 - 1].value.sm || !stack1[sp1 - 1].value.sm->sub)
+				{
+					//Error
+					return -2;
+				}
 				if (isMatrix(stack1[sp1].label))//矩阵赋值到子矩阵
 				{
 					if (getMP(&m1, sp1))
@@ -2061,7 +2195,7 @@ static int parser(void)
 				}
 				else
 				{
-					if (err = pop(preference2(buf2[i].label)))//pop里要进行判定
+					if ((err = pop(preference2(buf2[i].label)))!= -1)//pop里要进行判定
 					{
 						//Error
 						return err;
@@ -2077,7 +2211,7 @@ static int parser(void)
 		{
 			if (flagn == 1)
 			{
-				if (err = pop(preference2(buf2[i].label)))//Todo 优化,用1代替buf2[i].label
+				if ((err = pop(preference2(buf2[i].label))) != -1)//Todo 优化,用1代替buf2[i].label
 				{
 					//Error
 					return err;
@@ -2132,7 +2266,7 @@ static int parser(void)
 				//Error
 				return buf2[i].offset;
 			}
-			if (err = pop(3))//先按,的优先级弹一遍，使得如果为函数的话，左右两括号间只有，和:
+			if ((err = pop(3))!= -1)//先按,的优先级弹一遍，使得如果为函数的话，左右两括号间只有，和:
 			{
 				//Error;
 				return err;
@@ -2141,7 +2275,7 @@ static int parser(void)
 			{
 				colon();//Todo处理Error
 			}//两括号间只有:
-			if (err = pop(0))//pop中0表示一直弹到左括号
+			if ((err = pop(0))!= -1)//pop中0表示一直弹到左括号
 			{
 				//Error;
 				return err;
@@ -2172,17 +2306,22 @@ static int parser(void)
 				//Error
 				return buf2[i].offset;
 			}
-			if (err = pop(preference2(buf2[i].label)))
+			if ((err = pop(preference2(buf2[i].label)))!= -1)
 			{
 				//Error
 				return err;
 			}
-			if (err = semicolon())
+			if ((err = semicolon())!= -1)
 			{
 				//Error
 				return err;
 			}
 			//stack1[sp1 - 2] = stack1[sp1 - 1];
+			if (sp1 < 2)
+			{
+				//Error
+				return -2;
+			}
 			stack1[sp1 - 2].label = stack1[sp1 - 1].label;
 			stack1[sp1 - 2].length = stack1[sp1 - 1].length;
 			stack1[sp1 - 2].offset = stack1[sp1 - 1].offset;
@@ -2204,14 +2343,14 @@ static int parser(void)
 				//Error
 				return buf2[i].offset;
 			}
-			if (err = pop(preference2(buf2[i].label)))
+			if ((err = pop(preference2(buf2[i].label)))!= -1)
 			{
 				//Error
 				return err;
 			}
 			if ((sp1 - 1>=0 && stack1[sp1 - 1].label == 0) || (sp1-2>=0 && stack1[sp1 - 2].label == 0))//是在定义矩阵中
 			{
-				if (err = comma())
+				if ((err = comma())!= -1)
 				{
 					//Error
 					return err;
@@ -2221,7 +2360,7 @@ static int parser(void)
 			}
 			else//在函数中分隔参数
 			{
-				if (err = pop(preference2(buf2[i].label)))
+				if ((err = pop(preference2(buf2[i].label)))!= -1)
 				{
 					//Error
 					return err;
@@ -2247,12 +2386,12 @@ static int parser(void)
 				//Error
 				return buf2[i].offset;
 			}
-			if (err = pop(preference2(buf2[i].label)))
+			if ((err = pop(preference2(buf2[i].label)))!= -1)
 			{
 				//Error
 				return err;
 			}
-			if (err = semicolon())
+			if ((err = semicolon())!= -1)
 			{
 				//Error
 				return err;
@@ -2261,7 +2400,7 @@ static int parser(void)
 			i++;
 		}
 	}
-	if (err = pop(-1))//-1在pop中表示全部弹出
+	if ((err = pop(-1))!= -1)//-1在pop中表示全部弹出
 	{
 		//Error
 		return err;
@@ -2276,7 +2415,11 @@ static int parser(void)
 	}
 	if (stack1[sp1].label == 44)
 	{
-		
+		if (!stack1[sp1].value.sm || !stack1[sp1].value.sm->sub)
+		{
+			//Error
+			return -2;
+		}
 		if (!stor_assign(stor_createAns(stack1[sp1].value.sm->sub->m, 
 			stack1[sp1].value.sm->sub->n), 
 			stack1[sp1].value.sm->sub)
@@ -2288,6 +2431,11 @@ static int parser(void)
 	}
 	else if (stack1[sp1].label == 47 || stack1[sp1].label == 38)
 	{
+		if (!stack1[sp1].value.m)
+		{
+			//Error
+			return -2;
+		}
 		if (!stor_assign(
 			stor_createAns(stack1[sp1].value.m->m, stack1[sp1].value.m->n),
 			stack1[sp1].value.m))
@@ -2328,7 +2476,7 @@ static int parser(void)
 	}
 	else
 	{
-		iobuf[0] = 'A';
+		iobuf[0] = 'a';
 		iobuf[1] = 'n';
 		iobuf[2] = 's';
 		i = 3;

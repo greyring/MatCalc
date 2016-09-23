@@ -306,6 +306,11 @@ Matrix* calc_inverse(Matrix* p)
 		}
 		//k is no use since
 		temp = *stor_entry(t, i, i);
+		if (util_isZero(temp))
+		{
+			//Error
+			return NULL;
+		}
 		mulRow(t, i, (double)1.0 / temp);
 		mulRow(ans, i, (double)1.0 / temp);
 		//the [i][i] is 1 now
@@ -687,6 +692,11 @@ Matrix* calc_det(Matrix* p)
 			swapColum(temp, i, k);
 		}
 		*stor_entry(ans, 0, 0) *= *stor_entry(temp, i, i);
+		if (util_isZero(*stor_entry(temp, i, i)))
+		{
+			//Error
+			return NULL;
+		}
 		mulRow(temp, i, (double)1.0/ *stor_entry(temp, i, i));
 		for (j = i + 1; j < n; j++)
 		{
@@ -724,6 +734,11 @@ Matrix* calc_rank(Matrix *p)
 	int i, j, k;
 	int count = 0;
 
+	if (p == NULL)
+	{
+		//Error
+		return NULL;
+	}
 	ans = NULL;
 	if (p->m > p->n)
 	{
@@ -742,6 +757,11 @@ Matrix* calc_rank(Matrix *p)
 		}
 		stor_assign(ans, p);
 	}
+	if (ans == NULL)
+	{
+		//Error
+		return NULL;
+	}
 	for (i = 0; i < ans->m; i++)
 	{
 		k = count;
@@ -754,7 +774,17 @@ Matrix* calc_rank(Matrix *p)
 		{
 			swapColum(ans, count, k);
 		}
+		if (util_isZero(*stor_entry(ans, i, count)))
+		{
+			//Error
+			return NULL;
+		}
 		mulRow(ans, i, (double)1.0 / *stor_entry(ans, i, count));
+		if (!ans)
+		{
+			//Error
+			return NULL;
+		}
 		for (j = i + 1; j < ans->m; j++)
 		{
 			addRow(ans, j, i, -*stor_entry(ans, j, count));
@@ -871,6 +901,7 @@ Matrix* calc_angle(Matrix* p1, Matrix* p2)
 static int isZeroLine(Matrix *p, int r)
 {
 	int i;
+	
 	for (i = 0; i < p->n; i++)
 	{
 		if (!util_isZero(*stor_entry(p, r, i)))
@@ -901,6 +932,11 @@ Matrix* calc_rref(Matrix* p)
 		return NULL;
 	}
 	stor_assign(ans, p);
+	if (!ans)
+	{
+		//Error
+		return NULL;
+	}
 	for (i = 0; i < ans->m; i++)
 	{
 		k = isZeroLine(ans, i);
@@ -908,7 +944,17 @@ Matrix* calc_rref(Matrix* p)
 		{
 			continue;
 		}
+		if (util_isZero(*stor_entry(ans, i, k)))
+		{
+			//Error
+			return NULL;
+		}
 		mulRow(ans, i, (double)1.0 / *stor_entry(ans, i, k));
+		if (!ans)
+		{
+			//Error
+			return NULL;
+		}
 		for (j = 0; j < ans->m; j++)
 		{
 			if (i != j && !util_isZero(*stor_entry(ans, j, k)))
@@ -982,6 +1028,11 @@ Matrix* calc_everyEx(Matrix *p, int ex)
 	{
 		for (j = 0; j < p->n; j++)
 		{
+			if (ex < 0 && util_isZero(*stor_entry(p, i, j)))
+			{
+				//Error
+				return NULL;
+			}
 			*stor_entry(ans, i, j) = util_ex(*stor_entry(p, i, j), ex);
 		}
 	}
@@ -1053,6 +1104,11 @@ static Matrix* householder(Matrix *v, int c)
 		return NULL;
 	}
 	norm = *stor_entry(ans, 0, 0);
+	if (util_isZero(norm))
+	{
+		//Error
+		return NULL;
+	}
 	if (!calc_numMul(calc_mul(temp, calc_trans(temp)),(double)2.0/(norm*norm)))
 	{
 		//Error
@@ -1145,6 +1201,11 @@ Matrix* calc_eig(Matrix* p)
 			}
 			r1 = sqrt(*stor_entry(temp, i, i) * *stor_entry(temp, i, i)
 				+ *stor_entry(temp, i + 1, i)* *stor_entry(temp, i + 1, i));
+			if (util_isZero(r1))
+			{
+				//Error
+				return NULL;
+			}
 			*stor_entry(ans, i, i) = *stor_entry(temp, i, i) / r1;
 			*stor_entry(ans, i + 1, i + 1) = *stor_entry(temp, i, i) / r1;
 			*stor_entry(ans, i + 1, i) = -*stor_entry(temp, i + 1, i) / r1;
@@ -1265,6 +1326,11 @@ Matrix* calc_solve(Matrix *p)
 Matrix* calc_numEx(double d, long ex)
 {
 	if (!stor_createAns(1, 1))
+	{
+		//Error
+		return NULL;
+	}
+	if (ex < 0 && util_isZero(d))
 	{
 		//Error
 		return NULL;
