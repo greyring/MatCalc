@@ -15,6 +15,7 @@ int main(void)
 	//int i,j;
 	int row[2] = {1, 3};
 	int colum[2] = {1, 3};
+	int key;
 	//SubMatrix *p;
 	Matrix *t = NULL, *t2 = NULL, *t3= NULL;
 
@@ -38,9 +39,13 @@ int main(void)
 	{
 		uniFlag.show = 1;
 		io_input();
-		if (com_interpret()==-1)
+		if ((key = com_interpret())==-1)
 		{
 			io_output();//Todo不是所有都输出矩阵的
+		}
+		else if (key == -3)
+		{
+			break;
 		}
 		else
 		{

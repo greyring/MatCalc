@@ -392,6 +392,16 @@ static word scanner(int k)
 		w.label = 48;
 		w.length = 5;
 	}
+	else if (!cmp(k, "help"))
+	{
+		w.label = 49;
+		w.length = 4;
+	}
+	else if (!cmp(k, "exit"))
+	{
+		w.label = 50;
+		w.length = 4;
+	}
 
 	if (w.label != 0)
 	{
@@ -1095,6 +1105,10 @@ static int getMP(Matrix **m, int k)
 	else
 	{
 		*m = stack1[k].value.m;//47,38
+	}
+	if (*m == NULL)
+	{
+		return 1;
 	}
 	return 0;
 }
@@ -2247,11 +2261,7 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 					//Error
 					return stack1[sp1].offset;
 				}
-				if (getMP(&m1, sp1))
-				{
-					//Error
-					return stack1[sp1].offset;
-				}
+				getMP(&m1, sp1);//Todo 检测错误，get中要确保不是NULL
 				if (stack1[sp1 - 1].value.m == NULL ||
 					stack1[sp1 - 1].value.m->m != m1->m || stack1[sp1 - 1].value.m->n != m1->n)//不存在或者大小不符合
 				{
@@ -2718,7 +2728,7 @@ int com_interpret()//先处理readfrom read writeto, 对命令进行格式化，处理命令，处
 	sp2 = -1;
 	format0();
 	w = scanner(0);
-	if (w.label == 17||w.label == 19)//readfrom 或 writeto
+	if (w.label == 17 || w.label == 19 || w.label == 49 || w.label == 50)//readfrom 或 writeto 或help或exit
 	{
 		i = w.length;//第一个字符位置
 		while(buf1[i].ch == ' ') i++;
@@ -2728,49 +2738,59 @@ int com_interpret()//先处理readfrom read writeto, 对命令进行格式化，处理命令，处
 			str[j++] = buf1[i++].ch;
 		}
 		str[j] = 0;
-		if (w.label == 17)
+		switch (w.label)
 		{
-			if (uniFlag.in == 1)
-			{
-				if (fclose(fpin))
+			case 17:
+				if (uniFlag.in == 1)
+				{
+					if (fclose(fpin))
+					{
+						//Error
+						return 1;
+					}
+				}
+				if(fopen_s(&fpin, str, "r"))
 				{
 					//Error
 					return 1;
 				}
-			}
-			if(fopen_s(&fpin, str, "r"))
-			{
-				//Error
-				return 1;
-			}
-			util_strcpy(filein, str);
-			uniFlag.in = 1;
-		}
-		else
-		{
-			if (uniFlag.out == 1)
-			{
-				if (fclose(fpout))
+				util_strcpy(filein, str);
+				uniFlag.in = 1;
+				break;
+			case 19:
+				if (uniFlag.out == 1)
+				{
+					if (fclose(fpout))
+					{
+						//Error
+						return 1;
+					}
+				}
+				if (strlen(str) == 0)//没有跟参数
+				{
+					fileout[0] = 0;
+					uniFlag.out = 0;
+					return 0;
+				}
+				if (fopen_s(&fpout, str, "a"))
 				{
 					//Error
 					return 1;
 				}
-			}
-			if (strlen(str) == 0)//没有跟参数
-			{
-				fileout[0] = 0;
-				uniFlag.out = 0;
-				return 0;
-			}
-			if (fopen_s(&fpout, str, "a"))
-			{
-				//Error
-				return 1;
-			}
-			util_strcpy(fileout, str);
-			uniFlag.out = 1;
+				util_strcpy(fileout, str);
+				uniFlag.out = 1;
+				break;
+			case 49:
+				if (strlen(str) == 0)
+				{
+					return -1;
+				}
+				printf("%s\n", gethelp(str));
+				break;
+			case 50:
+				return -3;//退出
 		}
-		return 0;
+		return -1;
 	}
 
 	if (format1())
