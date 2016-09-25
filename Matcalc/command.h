@@ -23,3 +23,4 @@ typedef struct
 
 int com_interpret();
 int com_inputNotEnd();
+extern word com_result;

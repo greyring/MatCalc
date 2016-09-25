@@ -5,6 +5,7 @@
 #include "util.h"
 
 char buf[512];
+word com_result;//ans只作为运算结果通用存储器，com_result是包括了变量类型的真正意义上的ans
 static letter buf1[512];
 static word buf2[256];
 static word stack1[256];//存放操作数
@@ -33,14 +34,6 @@ static int isPunctuation(char ch)
  */
 static int isMatrix(int label)
 {
-	/*if (label != 37 && label != 38 &&  label !=44 && label != 47)//Todo 37实际已消失
-	{
-		return 0;
-	}
-	else 
-	{
-		return 1;
-	}*/
 	if (label != 38 && label != 44 && label != 47)
 	{
 		return 0;
@@ -49,7 +42,6 @@ static int isMatrix(int label)
 	{
 		return 1;
 	}
-
 }
 
 /*
@@ -329,19 +321,22 @@ static word scanner(int k)
 		w.label = 36;
 		w.length = 3;
 	}
+	else if (!cmp(k, "solve"))
+	{
+		w.label = 48;
+		w.length = 5;
+	}
 
 	if (w.label != 0)
 	{
 		return w;
 	}
-//////////////////////////////////////////////////////////////////////标识符或ans或数字
-	if(buf1[k].ch == 'a' && buf1[k+1].ch == 'n' && buf1[k+2].ch == 's' && 
+//////////////////////////////////////////////////////////////////////标识符或ans|Ans或数字
+	if((buf1[k].ch == 'a'||buf1[k].ch == 'A') && buf1[k+1].ch == 'n' && buf1[k+2].ch == 's' && 
 		!isalnum(buf1[k+3].ch) && buf1[k+3].ch != '_')
 	{
 		w.label = 37;
 		w.length = 3;
-		stor_createMatrix(&(w.value.m), ans->m, ans->n);//Todo 出错
-		stor_assign(w.value.m, ans);
 		return w;
 	}
 
@@ -465,16 +460,6 @@ static int format1(void)
 {
 	int i = 0, j = 0;
 
-	/*if (isPunctuation(buf1[i].ch))
-	{
-		//Error
-		return 1;
-	}
-	else
-	{
-		i++;
-		j++;
-	}*///Todo 验证删掉这一段没有问题
 	while(buf1[i].ch)
 	{
 		if (buf1[i].ch != ' ')
@@ -684,7 +669,11 @@ static int colon(void)
 			//Error
 			return stack1[sp1 - 2].offset;
 		}
-		stor_createMatrix(&temp, 1, (c - a) / b + 1);
+		if (!stor_createMatrix(&temp, 1, (c - a) / b + 1))
+		{
+			//Error
+			return stack1[sp1 - 2].offset;
+		}
 		for (i = 0; i<(c - a) / b + 1; i++)//Todo 子矩阵的时候，用的是数组，然而处理的时候用的是矩阵，到时候要转换
 		{
 			*stor_entry(temp, 0, i) = b*i + a;
@@ -699,7 +688,11 @@ static int colon(void)
 	{
 		a = stack1[sp1 - 1].value.l;
 		b = stack1[sp1].value.l;
-		stor_createMatrix(&temp, 1, b - a + 1);
+		if (!stor_createMatrix(&temp, 1, b - a + 1))
+		{
+			//Error
+			return stack1[sp1 - 1].offset;
+		}
 		for (i = 0; i<(b - a) + 1; i++)
 		{
 			*stor_entry(temp, 0, i) = a + i;
@@ -718,11 +711,15 @@ static int colon(void)
  */
 static int comma(void)
 {
-	Matrix *temp = NULL;	
+	Matrix *temp = NULL;
+	int err;
 
 	if (sp2 >= 0 && stack2[sp2].label == 1)//:
 	{
-		colon();//Todo处理Error
+		if ((err = colon()) != -1)
+		{
+			return err;
+		}
 	}
 
 	if (sp1 < 0)
@@ -734,7 +731,11 @@ static int comma(void)
 	{
 		if (stack1[sp1].label == 39 || stack1[sp1].label == 40)//trans number to matrix
 		{
-			stor_createMatrix(&temp, 1,1);
+			if (!stor_createMatrix(&temp, 1, 1))
+			{
+				//Error
+				return stack1[sp1].offset;
+			}
 			if (stack1[sp1].label == 39)
 			{
 				*stor_entry(temp, 0, 0) = stack1[sp1].value.l;
@@ -799,7 +800,7 @@ static int semicolon(void)
 	int err;
 	Matrix *temp = NULL;
 
-	if (err = comma())
+	if ((err = comma())!=-1)
 	{
 		return err;
 	}
@@ -818,7 +819,7 @@ static int semicolon(void)
 		//Error
 		return stack1[sp1-1].offset;
 	}
-	if (sp1-3>0 && stack1[sp1-3].label == 0)//Todo 小心溢出
+	if (sp1-3>0 && stack1[sp1-3].label == 0)
 	{
 		if (!isMatrix(stack1[sp1-2].label))
 		{
@@ -949,7 +950,7 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 	double tempd;
 	int temp1[10000] = {0}, temp2[10000] = {0};
 	char str[256];
-	int i;
+	int i, err;
 
 	if (sp2 == -1)
 	{
@@ -998,8 +999,21 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 						if (n == 1)//1个参数
 						{
 							if (stack2[sp2].label == 20)
-								calc_rand(l1, l1);//Todo 出错
-							else calc_zeros(l1, l1);
+							{
+								if (!calc_rand(l1, l1))
+								{
+									//Error
+									return stack2[sp2].offset;
+								}
+							}
+							else
+							{
+								if (!calc_zeros(l1, l1))
+								{
+									//Error
+									return stack2[sp2].offset;
+								}
+							}
 							stack1[sp1].label = 47;
 							stack1[sp1].value.m = ans;
 							ans = NULL;
@@ -1017,8 +1031,21 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 								return stack1[sp1 - 1].offset;
 							}
 							if (stack2[sp2].label == 20)
-								calc_rand(l2, l1);
-							else calc_zeros(l2, l1);
+							{
+								if (!calc_rand(l2, l1))
+								{
+									//Error
+									return stack2[sp2].offset;
+								}
+							}
+							else
+							{
+								if (!calc_zeros(l2, l1))
+								{
+									//Error
+									return stack2[sp2].offset;
+								}
+							}
 							sp1--;
 							stack1[sp1].label = 47;
 							stack1[sp1].value.m = ans;
@@ -1076,12 +1103,47 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 						}
 						switch (stack2[sp2].label)
 						{
-							case 23:  calc_sum(m1); break;
-							case 24:  calc_max(m1); break;
-							case 25:  calc_min(m1); break;
-							case 31:  calc_det(m1); break;
-							case 32:  calc_rank(m1); break;
-							case 34:  calc_norm(m1); break;
+							case 23:  
+								if (!calc_sum(m1))
+								{
+									//Error
+									return stack2[sp2].offset;
+								}break;
+							case 24:  
+								if (!calc_max(m1))
+								{
+									//Error
+									return stack2[sp2].offset;
+								}
+								break;
+							case 25:  
+								if (!calc_min(m1))
+								{
+									//Error
+									return stack2[sp2].offset;
+								}
+								break;
+							case 31:  
+								if (!calc_det(m1))
+								{
+									//Error
+									return stack2[sp2].offset;
+								}
+								break;
+							case 32:  
+								if (!calc_rank(m1))
+								{
+									//Error
+									return stack2[sp2].offset;
+								}
+								break;
+							case 34:  
+								if (!calc_norm(m1))
+								{
+									//Error
+									return stack2[sp2].offset;
+								}
+								break;
 						}
 						
 						if (stack1[sp1].label == 44)//这矩阵需要被释放
@@ -1108,7 +1170,7 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 						sp2--;
 						break;
 					}
-					case 26: case 27: case 28:case 29:case 30:case 36://round,upper,lower,reverse,rref,feature
+					case 26: case 27: case 28:case 29:case 30:case 36:case 48://round,upper,lower,reverse,rref,feature
 					{
 						if (n > 1)
 						{
@@ -1125,18 +1187,58 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 							//Error
 							return stack1[sp1].offset;
 						}
-						if (stack2[sp2].label == 26)
-							calc_round(m1);
-						else if (stack2[sp2].label == 27)
-							calc_upper(m1);
-						else if (stack2[sp2].label == 28)
-							calc_lower(m1);
-						else if (stack2[sp2].label == 29)
-							calc_inverse(m1);
-						else if (stack2[sp2].label == 30)
-							calc_rref(m1);
-						else if (stack2[sp2].label == 36)
-							calc_eig(m1);
+						switch (stack2[sp2].label)
+						{
+							case 26: 
+								if (!calc_round(m1))
+								{
+									//Error
+									return stack2[sp2].offset;
+								}
+								break;
+							case 27:
+								if (!calc_upper(m1))
+								{
+									//Error
+									return stack2[sp2].offset;
+								}
+								break;
+							case 28:
+								if (!calc_lower(m1))
+								{
+									//Error
+									return stack2[sp2].offset;
+								}
+								break;
+							case 29:
+								if (!calc_inverse(m1))
+								{
+									//Error
+									return stack2[sp2].offset;
+								}
+								break;
+							case 30:
+								if (!calc_rref(m1))
+								{
+									//Error
+									return stack2[sp2].offset;
+								}
+								break;
+							case 36:
+								if (!calc_eig(m1))
+								{
+									//Error
+									return stack2[sp2].offset;
+								}
+								break;
+							case 48:
+								if (!calc_solve(m1))
+								{
+									//Error
+									return stack2[sp2].offset;
+								}
+								break;
+						}//switch end
 
 						if (stack1[sp1].label == 44)//这矩阵需要被释放
 						{
@@ -1177,8 +1279,21 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 							return stack1[sp1 - 1].offset;
 						}
 						if (stack2[sp2].label == 33)
-							calc_dot(m1, m2);
-						else calc_angle(m1, m2);
+						{
+							if (!calc_dot(m1, m2))
+							{
+								//Error
+								return stack2[sp2].offset;
+							}
+						}
+						else
+						{
+							if (!calc_angle(m1, m2))
+							{
+								//Error
+								return stack2[sp2].offset;
+							}
+						}
 
 						if (stack1[sp1].label == 44)//这矩阵需要被释放
 						{
@@ -1458,7 +1573,7 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 				{
 					stack1[sp1].value.d = -stack1[sp1].value.d;
 				}
-				sp2--;//Todo 可能有些sp1,sp2--忘记了
+				sp2--;
 			}
 			else if (isMatrix(stack1[sp1].label))
 			{
@@ -1667,7 +1782,12 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 				l1 = stack1[sp1].value.l;
 				sp1--;
 				stack1[sp1].label = 39;
-				stack1[sp1].value.l = l1 % l2;//Todo 除以零的错误
+				if (l2 == 0)
+				{
+					//Error
+					return stack1[sp1].offset;
+				}
+				stack1[sp1].value.l = l1 % l2;
 				sp2--;
 			}
 			else if (isMatrix(stack1[sp1 - 1].label))//矩阵mod数
@@ -1838,7 +1958,7 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 				return stack1[sp1].offset;
 			}
 			l2 = stack1[sp1].value.l;
-			if (isNum(sp1 - 1) && stack2[sp2].label == 42)//Todo 也许从不会发生，因为数字加点会被解释成浮点数
+			if (isNum(sp1 - 1) && stack2[sp2].label == 42)//也许从不会发生，因为数字加点会被解释成浮点数
 			{
 				//Error
 				return stack2[sp2].offset;
@@ -1925,7 +2045,11 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 		}
 		else if (stack2[sp2].label == 1)//:
 		{
-			colon();//Todo处理Error
+			if ((err = colon()) != -1)
+			{
+				//Error
+				return err;
+			}
 			sp2--;
 		}
 		else if (stack2[sp2].label == 7)//=
@@ -1990,7 +2114,7 @@ static int pop(int prefer)//pop 对于右括号一种是表达式一种是参数，区别在逗号？
 					//Error
 					return stack1[sp1].offset;
 				}
-				m1 = stack1[sp1 - 1].value.sm->sub;
+				m1 = stack1[sp1 - 1].value.sm->sub;//Todo 函数声明加const
 				stack1[sp1 - 1].value.sm->sub = NULL;
 				stor_freeSubMatrix(stack1[sp1 - 1].value.sm);
 				stack1[sp1 - 1].label = 47;
@@ -2064,15 +2188,14 @@ static int parser(void)
 {
 	int i, err;
 	Matrix *temp = NULL;
-	Matrix *oldAns = ans;
-	ans = NULL;
-	//防止出现错误导致ans丢失//Todo 出错时记得恢复ans//Todo 在每次计算前ans弄为NULL
-	//ans的37在这个阶段还有，但是已经将值带进去了
+	//Todo 在每次计算前ans弄为NULL
+	//ans的37表示的是result
+
 	i = 0;
 	flagn = 0;
 	while (buf2[i].label)
 	{
-		if (buf2[i].label >= 20 && buf2[i].label <= 36)//函数
+		if ((buf2[i].label >= 20 && buf2[i].label <= 36) || buf2[i].label == 48)//函数
 		{
 			if (flagn == 1)
 			{
@@ -2115,8 +2238,7 @@ static int parser(void)
 			}
 			else
 			{
-				stack1[sp1].label = 47;
-				stack1[sp1].value.m = buf2[i].value.m;
+				stack1[sp1] = com_result;//Todo
 			}
 			stack1[sp1].length = buf2[i].length;
 			stack1[sp1].offset = buf2[i].offset;
@@ -2249,7 +2371,11 @@ static int parser(void)
 			}
 			else
 			{
-				calc_trans(stack1[sp1].value.m);
+				if (!calc_trans(stack1[sp1].value.m))
+				{
+					//Error
+					return stack1[sp1].offset;
+				}
 				stack1[sp1].label = 47;
 				stack1[sp1].offset = stack1[sp1].offset;
 				stack1[sp1].length = 0;
@@ -2273,7 +2399,11 @@ static int parser(void)
 			}
 			if (stack2[sp2].label == 1)//:
 			{
-				colon();//Todo处理Error
+				if ((err = colon()) != -1)
+				{
+					//Error
+					return err;
+				}
 			}//两括号间只有:
 			if ((err = pop(0))!= -1)//pop中0表示一直弹到左括号
 			{
@@ -2290,6 +2420,9 @@ static int parser(void)
 				//Error
 				return buf2[i].offset;
 			}
+			sp1++;
+			stack1[sp1].label = 0;
+			stack1[sp1].offset = buf2[i].offset;
 			sp1++;
 			stack1[sp1].label = 0;
 			stack1[sp1].offset = buf2[i].offset;
@@ -2322,11 +2455,11 @@ static int parser(void)
 				//Error
 				return -2;
 			}
-			stack1[sp1 - 2].label = stack1[sp1 - 1].label;
-			stack1[sp1 - 2].length = stack1[sp1 - 1].length;
-			stack1[sp1 - 2].offset = stack1[sp1 - 1].offset;
-			stack1[sp1 - 2].value.m = stack1[sp1 - 1].value.m;//Todo length应该是不断相加的，检查一下
-			sp1 = sp1 - 2;
+			stack1[sp1 - 3].label = stack1[sp1 - 1].label;
+			stack1[sp1 - 3].length = stack1[sp1 - 1].length;
+			stack1[sp1 - 3].offset = stack1[sp1 - 1].offset;
+			stack1[sp1 - 3].value.m = stack1[sp1 - 1].value.m;//Todo length应该是不断相加的，检查一下
+			sp1 = sp1 - 3;
 			if (stack2[sp2].label != 5)//不是[
 			{
 				//Error
@@ -2348,7 +2481,7 @@ static int parser(void)
 				//Error
 				return err;
 			}
-			if ((sp1 - 1>=0 && stack1[sp1 - 1].label == 0) || (sp1-2>=0 && stack1[sp1 - 2].label == 0))//是在定义矩阵中
+			if ((sp1 - 1>=0 && stack1[sp1 - 1].label == 0) || (sp1-2>=0 && stack1[sp1 - 2].label == 0))//是在定义矩阵中//Todo算法有问题
 			{
 				if ((err = comma())!= -1)
 				{
@@ -2367,7 +2500,11 @@ static int parser(void)
 				}
 				if (stack2[sp2].label == 1)//:
 				{
-					colon();//Todo处理Error
+					if ((err = colon()) != -1)
+					{
+						//Error
+						return err;
+					}
 				}
 				sp2++;
 
@@ -2406,88 +2543,17 @@ static int parser(void)
 		return err;
 	}
 
-	//把最终结果赋值给ans
+	//把最终结果赋值给result
 	if (sp2 != -1 || sp1 != 0)
 	{
 		//Error
 		printf("left something");
 		return stack1[sp1].offset;
 	}
-	if (stack1[sp1].label == 44)
-	{
-		if (!stack1[sp1].value.sm || !stack1[sp1].value.sm->sub)
-		{
-			//Error
-			return -2;
-		}
-		if (!stor_assign(stor_createAns(stack1[sp1].value.sm->sub->m, 
-			stack1[sp1].value.sm->sub->n), 
-			stack1[sp1].value.sm->sub)
-			)
-		{
-			//Error
-			return stack1[sp1].offset;
-		}
-	}
-	else if (stack1[sp1].label == 47 || stack1[sp1].label == 38)
-	{
-		if (!stack1[sp1].value.m)
-		{
-			//Error
-			return -2;
-		}
-		if (!stor_assign(
-			stor_createAns(stack1[sp1].value.m->m, stack1[sp1].value.m->n),
-			stack1[sp1].value.m))
-		{
-			//Error
-			return stack1[sp1].offset;
-		}
-	}
-	else if (isNum(sp1))
-	{
-		if (!stor_createAns(1, 1))
-		{
-			//Error
-			return stack1[sp1].offset;
-		}
-		if (stack1[sp1].label == 39)
-		{
-			*stor_entry(ans, 0, 0) = stack1[sp1].value.l;
-		}
-		else
-		{
-			*stor_entry(ans, 0, 0) = stack1[sp1].value.d;
-		}
-	}
-	else
-	{
-		//Error
-		return stack1[sp1].offset;
-	}
-
-	//往输出缓存里放东西
-	if (stack1[sp1].label == 38)
-	{
-		for (i = 0; i < stack1[sp1].length; i++)
-		{
-			iobuf[i] = buf[i + stack1[sp1].offset];
-		}
-	}
-	else
-	{
-		iobuf[0] = 'a';
-		iobuf[1] = 'n';
-		iobuf[2] = 's';
-		i = 3;
-	}
-	iobuf[i++] = '=';
-	iobuf[i++] = '[';
-	iobuf[i] = 0;
+	com_result = stack1[sp1];//Todo
+	                         //有可能是子矩阵类型
 
 	sp1--;
-
-	stor_freeMatrix(oldAns);
 	return -1;
 }
 
@@ -2608,19 +2674,6 @@ int com_interpret()//先处理readfrom read writeto, 对命令进行格式化，处理命令，处
 		return err;
 	}
 
-	/*while (buf1[i].ch)
-	{
-		printf("%c",buf1[i].ch);
-		i++;
-	}
-	printf("\n");
-	format1();
-
-	i = 0;
-	while (buf1[i].ch)
-	{
-		printf("%c",buf1[i].ch);
-		i++;
-	}*/
 	return -1;
 }
+//Todo ans的空间分配释放问题

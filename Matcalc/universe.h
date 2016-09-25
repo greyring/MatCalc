@@ -8,6 +8,7 @@
 #include <float.h>
 #include <time.h>
 
+
 typedef struct
 {
 	int m,n;
@@ -40,4 +41,3 @@ extern FILE* fpin;
 extern FILE* fpout;
 extern char filein[256],fileout[256];
 extern char buf[512];
-extern char iobuf[512];

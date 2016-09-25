@@ -4,10 +4,6 @@
 #include "util.h"
 
 /*
-*返回的指针都是ans，如果要弄个新的矩阵要自己弄
-*/
-
-/*
 * r is script, return the script in line r that is not zero
 * if the line is all zero, return -1,NoError
 */
@@ -281,7 +277,11 @@ Matrix* calc_inverse(Matrix* p)
 		//Error
 		return NULL;
 	}
-	stor_assign(t, p);
+	if (!stor_assign(t, p))
+	{
+		//Error
+		return NULL;
+	}
 
 	ans = NULL;
 	if (!calc_eye(n))
@@ -379,6 +379,11 @@ Matrix* calc_numMod(Matrix* p, long k)
 		//Error
 		return NULL;
 	}
+	if (k == 0)
+	{
+		//Error
+		return NULL;
+	}
 	ans = NULL;
 	if (!stor_createAns(p->m, p->n))
 	{
@@ -426,7 +431,11 @@ Matrix* calc_ex(Matrix* p,long ex)
 	if (ex < 0)
 	{
 		ans = NULL;
-		temp = calc_inverse(p);
+		if (!(temp = calc_inverse(p)))
+		{
+			//Error
+			return NULL;
+		}
 		ans = NULL;
 		ex = -ex;
 	}
@@ -437,7 +446,11 @@ Matrix* calc_ex(Matrix* p,long ex)
 			//Error
 			return NULL;
 		}
-		stor_assign(temp, p);
+		if (!stor_assign(temp, p))
+		{
+			//Error
+			return NULL;
+		}
 		ans = NULL;
 	}
 
@@ -450,11 +463,19 @@ Matrix* calc_ex(Matrix* p,long ex)
 	{
 		if (ex % 2)
 		{
-			calc_mul(temp, ans);
+			if (!calc_mul(temp, ans))
+			{
+				//Error
+				return NULL;
+			}
 		}
 		temp2 = ans;               //protect ans
 		ans = NULL;                //protect ans
-		calc_mul(temp, temp);
+		if (!calc_mul(temp, temp))
+		{
+			//Error
+			return NULL;
+		}
 		stor_freeMatrix(temp);
 		temp = ans;
 		ans = temp2;               //protect ans
@@ -670,7 +691,11 @@ Matrix* calc_det(Matrix* p)
 		//Error
 		return NULL;
 	}
-	stor_assign(temp, p);
+	if (!stor_assign(temp, p))
+	{
+		//Error
+		return NULL;
+	}
 	ans = NULL;
 	if (!stor_createAns(1, 1))
 	{
@@ -755,7 +780,11 @@ Matrix* calc_rank(Matrix *p)
 			//Error
 			return NULL;
 		}
-		stor_assign(ans, p);
+		if (!stor_assign(ans, p))
+		{
+			//Error
+			return NULL;
+		}
 	}
 	if (ans == NULL)
 	{
@@ -931,7 +960,11 @@ Matrix* calc_rref(Matrix* p)
 		//Error
 		return NULL;
 	}
-	stor_assign(ans, p);
+	if (!stor_assign(ans, p))
+	{
+		//Error
+		return NULL;
+	}
 	if (!ans)
 	{
 		//Error
@@ -994,7 +1027,11 @@ Matrix* calc_numMul(Matrix* p, double mul)
 		return NULL;
 	}
 	ans = NULL;
-	stor_createAns(p->m, p->n);
+	if (!stor_createAns(p->m, p->n))
+	{
+		//Error
+		return NULL;
+	}
 	for (i = 0; i < p->m; i++)
 	{
 		for (j = 0; j < p->n; j++)
@@ -1085,7 +1122,11 @@ static Matrix* householder(Matrix *v, int c)
 		//Error
 		return NULL;
 	}
-	stor_assign(temp, v);
+	if (!stor_assign(temp, v))
+	{
+		//Error
+		return NULL;
+	}
 	for (i = 0; i < c; i++)
 	{
 		*stor_entry(temp, i, 0) = 0;
@@ -1161,7 +1202,11 @@ Matrix* calc_eig(Matrix* p)
 		//Error
 		return NULL;
 	}
-	stor_assign(temp, p);
+	if (!stor_assign(temp, p))
+	{
+		//Error
+		return NULL;
+	}
 	for (i = 0; i < p->n - 2; i++)
 	{
 		for (j = 0; j < p->m; j++)
@@ -1190,7 +1235,11 @@ Matrix* calc_eig(Matrix* p)
 	{
 		k++;
 		ans = NULL;
-		temp2 = calc_eye(p->n);
+		if (!(temp2 = calc_eye(p->n)))
+		{
+			//Error
+			return NULL;
+		}
 		ans = NULL;
 		for (i = 0; i < p->n - 1; i++)
 		{
@@ -1230,7 +1279,11 @@ Matrix* calc_eig(Matrix* p)
 			ans = NULL;
 			stor_freeMatrix(oldAns2);
 		}
-		calc_mul(temp, temp2);
+		if (!calc_mul(temp, temp2))
+		{
+			//Error
+			return NULL;
+		}
 		stor_freeMatrix(temp);
 		temp = ans;
 	}
@@ -1258,7 +1311,11 @@ Matrix* calc_solve(Matrix *p)
 		return NULL;
 	}
 	ans = NULL;
-	calc_rref(p);
+	if (!calc_rref(p))
+	{
+		//Error
+		return NULL;
+	}
 	temp = ans;
 	ans = NULL;
 	if (!(one = (int*)malloc(temp->m *sizeof(int))))
