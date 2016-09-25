@@ -358,6 +358,11 @@ SubMatrix* stor_subMatrix(Matrix *sour, int m, int n, int *row, int *colum)
 	{
 		for(j = 0; j<n; j++)
 		{
+			if (!stor_entry(sour, row[i] - 1, colum[j] - 1))
+			{
+				//Error
+				return NULL;
+			}
 			*stor_entry(p->sub, i, j) = *stor_entry(sour, row[i]-1, colum[j]-1);//Todo ¼ì²âÒç³öÎÊÌâ
 		}
 	}

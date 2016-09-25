@@ -32,6 +32,8 @@ int main(void)
 	//com_interpret();
 	//util_strcpy(buf, "a([1],[2]) = 1\n");
 	//com_interpret();
+	uniFlag.in = 0;
+	uniFlag.out = 0;
 	while (1)
 	{
 		uniFlag.show = 1;
