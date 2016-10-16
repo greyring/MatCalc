@@ -1,0 +1,9 @@
+之前版本stor_createAns处 m,m有错为m,n
+之前版本storage.c未判断NULL
+storassign 的memcpy有问题
+ans的处理交给scanner做，顺便把值赋了，之后计算的时候ans的改变就无忧无虑了
+length只在scanner部分有用，后续无需考虑，也不用做length的相加
+在parser往栈里压得时候，ans的编号由37变为47
+处理子矩阵，在paser中逗号的处理时处理了:，不需要再考虑这个问题
+在stack与buf的赋值方面应该建一个函数
+不应该在word里区分l和d的，这造成了很大的麻烦
