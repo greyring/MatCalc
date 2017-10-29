@@ -23,7 +23,6 @@ int main(void)
 	fpout = stdout;
 	srand((unsigned int)time(NULL));
 	stor_ini();
-
 	//strcpy(buf,"   _Matrix = [5  : .5 :       9]; \n");
 	//strcpy(buf,"  ans   =  [ 3+1   ++  -0 --4  ,  3 --+-3    +-2]\n");
 	//util_strcpy(buf, "_MatrixA=[1.25 3,  4.76;5.28   3 1.44\n\n1 8,1\n]\n");
